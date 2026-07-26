@@ -25,7 +25,7 @@
         <img src="assets/logo.png" alt="Radja Kukus Bali" class="brand-logo-img">
         <div class="brand-titles">
           <span class="brand-name">Kasir Outlet</span>
-          <span class="brand-tagline">Radja Kukus Bali • System Online 🟢</span>
+          <span class="brand-tagline">Radja Kukus Bali • InsForge Postgres Connected 🟢</span>
         </div>
       </div>
       <div>
@@ -59,22 +59,25 @@
       <!-- Segmented Tab Control (Mobile App View Switcher) -->
       <div class="admin-segmented-control">
         <button id="tab-btn-scanner" class="segment-btn active" onclick="switchAdminTab('scanner')">
-          📷 Scanner & Verifikasi
+          📷 Scanner & Kasir
         </button>
         <button id="tab-btn-leads" class="segment-btn" onclick="switchAdminTab('leads')">
-          📊 Data Lead & Rekap
+          📊 Data Lead
+        </button>
+        <button id="tab-btn-settings" class="segment-btn" onclick="switchAdminTab('settings')">
+          ⚙️ Setting Promo
         </button>
       </div>
 
       <!-- TAB 1: SCANNER & VERIFIKASI -->
       <div id="tab-content-scanner">
         
-        <!-- Cloud Sync Connection Status Badge -->
+        <!-- InsForge Project Connection Status Badge -->
         <div class="cashier-instruction-box" style="margin-bottom: 1rem; border-color: #00E676; background: #E8F5E9;">
           <div class="instruction-icon">🟢</div>
           <div class="instruction-text">
-            <strong>INSFORGE ACCOUNT CONNECTED: ampmtranslator@gmail.com</strong>
-            <p>User API Key: <code>uak_6RQ9B...ByBI</code> • Realtime Cloud Database Sync Aktif!</p>
+            <strong>INSFORGE POSTGRES DB: CONNECTED (radjakukus)</strong>
+            <p>Account: <code>fatkursukses@gmail.com</code> • Project ID: <code>d18f9b7c-77fc-45a6...</code></p>
           </div>
         </div>
 
@@ -124,7 +127,7 @@
         <!-- Lead List Card -->
         <div class="admin-app-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
-            <div class="app-card-title">📊 Riwayat Customer Real (Insforge Account)</div>
+            <div class="app-card-title">📊 Riwayat Customer Real (InsForge Postgres DB)</div>
             <div style="display: flex; gap: 6px;">
               <button id="btn-export-csv" class="btn-export-csv" style="padding: 6px 10px; font-size: 0.75rem;">
                 📥 Export CSV
@@ -167,6 +170,63 @@
 
       </div>
 
+      <!-- TAB 3: SETTING PROMO & MANAJEMEN KUOTA -->
+      <div id="tab-content-settings" style="display: none;">
+        <div class="admin-app-card">
+          <div class="app-card-title">⚙️ Setting Promo & Managemen Kuota Realtime</div>
+          <p class="app-card-subtitle">Atur judul promo, kuota gratis, jam klaim, dan peralihan promo Beli 1 Gratis 1 secara instan.</p>
+
+          <form id="form-promo-settings">
+            
+            <div class="form-group" style="margin-top: 1rem;">
+              <label class="form-label" style="font-weight:700;">🟢 Status Mode Kampanye Promo</label>
+              <select id="cfg-promo-status" class="form-control" style="font-weight:700;">
+                <option value="AKTIF">🟢 AKTIF (Pelanggan Bisa Klaim Voucher)</option>
+                <option value="TUTUP">🔴 TUTUP / PAUSE (Klaim Dihentikan Sementara)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">🎁 Nama Promo Utama (Klaim Gratis)</label>
+              <input type="text" id="cfg-promo-title" class="form-control" value="Voucher Traktir Kukusan & Dimsum Radja Kukus Bali!">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">🔥 Jumlah Kuota Promo Utama (Default: 100)</label>
+              <input type="number" id="cfg-primary-quota" class="form-control" value="100" min="1">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">📅 Tanggal Berlaku Promo</label>
+              <input type="text" id="cfg-promo-date" class="form-control" value="26 Juli 2026">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">⏰ Jam Operasional Penukaran Outlet</label>
+              <input type="text" id="cfg-promo-hours" class="form-control" value="16.00 - 21.00 WITA">
+            </div>
+
+            <div style="background:#FFF8E7; border:1px solid #F5D0A9; border-radius:12px; padding:12px; margin-bottom:1rem;">
+              <div style="font-weight:800; color:#7A1212; font-size:0.9rem; margin-bottom:4px;">
+                🔄 Promo Cadangan (Saat Kuota Utama Habis):
+              </div>
+              <div class="form-group" style="margin-bottom:8px;">
+                <label class="form-label" style="font-size:0.8rem;">Judul Promo Cadangan (Phase 2)</label>
+                <input type="text" id="cfg-fallback-promo-title" class="form-control" value="Voucher Promo BELI 1 GRATIS 1 (Buy 1 Get 1 Free)">
+              </div>
+              <label style="font-size:0.82rem; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <input type="checkbox" id="cfg-enable-fallback-b1g1" checked style="width:18px; height:18px;">
+                <strong>Aktifkan Otomatis Promo Beli 1 Gratis 1 Jika Kuota Habis</strong>
+              </label>
+            </div>
+
+            <button type="submit" id="btn-save-settings" class="btn-submit-lead" style="background: linear-gradient(135deg, #1E4D2B, #12331B);">
+              💾 Simpan Pengaturan Promo Sekarang
+            </button>
+          </form>
+        </div>
+      </div>
+
     </div>
 
   </main>
@@ -186,6 +246,7 @@
   </div>
 
   <!-- Database & Admin Logic Scripts -->
+  <script src="js/insforge-sdk.bundle.js"></script>
   <script src="js/insforge-db.js"></script>
   <script src="js/admin.js"></script>
 </body>

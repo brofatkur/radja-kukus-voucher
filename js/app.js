@@ -1,6 +1,6 @@
 /**
  * Public Application Logic - Radja Kukus Bali
- * Dual-Phase Voucher Generator + Unique WhatsApp Check (1 Phone = 1 Voucher)
+ * Dual-Phase Voucher Generator + Realtime Dynamic Promo Settings
  */
 
 const OFFICIAL_WA_NUMBER = '6287818720333';
@@ -67,12 +67,24 @@ function initHeroCTA() {
 function updateQuotaUI() {
   if (!window.insforgeDB) return;
   const quota = window.insforgeDB.getQuotaInfo();
+  const settings = window.insforgeDB.getPromoSettings();
 
   const remainingElem = document.getElementById('quota-remaining-count');
   const totalElem = document.getElementById('quota-total-count');
   const barElem = document.getElementById('quota-progress-fill');
   const percentElem = document.getElementById('quota-percent-text');
   const badgeElem = document.getElementById('quota-status-text');
+
+  // Update dynamic hero title & badges from promo settings
+  const heroTitleElem = document.querySelector('.hero-title');
+  if (heroTitleElem && settings.title) {
+    heroTitleElem.textContent = settings.title;
+  }
+
+  const promoBadgeElem = document.querySelector('.promo-badge');
+  if (promoBadgeElem) {
+    promoBadgeElem.textContent = `⚡ LIMITED PROMO • KUOTA KHUSUS ${settings.primaryQuota || 100} VOUCHER`;
+  }
 
   if (quota.isPhase1) {
     if (remainingElem) remainingElem.textContent = quota.remaining;
@@ -82,7 +94,7 @@ function updateQuotaUI() {
 
     if (badgeElem) {
       if (quota.remaining <= 5) {
-        badgeElem.innerHTML = `🔥 <strong>HAMPIR HABIS!</strong> Sisa <strong>${quota.remaining}</strong> voucher traktir gratis!`;
+        badgeElem.innerHTML = `🔥 <strong>HAMPIR HABIS!</strong> Sisa <strong>${quota.remaining}</strong> voucher promo utama!`;
         badgeElem.style.color = '#FF3B30';
       } else {
         badgeElem.innerHTML = `⚡ <strong>${quota.percentageClaimed}% Terisi Realtime</strong> • Segera Klaim Sebelum Kehabisan!`;
@@ -90,13 +102,14 @@ function updateQuotaUI() {
       }
     }
   } else {
+    // Phase 2: Fallback Beli 1 Gratis 1 Active!
     if (remainingElem) remainingElem.textContent = '0';
-    if (totalElem) totalElem.textContent = '100';
+    if (totalElem) totalElem.textContent = settings.primaryQuota || '100';
     if (percentElem) percentElem.textContent = '100%';
     if (barElem) barElem.style.width = '100%';
 
     if (badgeElem) {
-      badgeElem.innerHTML = `🎁 <strong>KUOTA TRAKTIR UTAMA HABIS!</strong> PROMO OTOMATIS BERALIH KE: <strong>BELI 1 GRATIS 1!</strong>`;
+      badgeElem.innerHTML = `🎁 <strong>KUOTA PROMO UTAMA HABIS!</strong> OTOMATIS BERALIH KE: <strong>${settings.fallbackTitle || 'BELI 1 GRATIS 1!'}</strong>`;
       badgeElem.style.color = '#D4AF37';
     }
   }
@@ -250,7 +263,9 @@ function initLeadForm() {
       resultSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     } catch (error) {
-      if (error.message === 'DUPLICATE_WHATSAPP') {
+      if (error.message === 'PROMO_CLOSED') {
+        alert('🔴 MAAF! Kampanye klaim voucher saat ini sedang dihentikan sementara oleh Admin.');
+      } else if (error.message === 'DUPLICATE_WHATSAPP') {
         const existing = error.existingVoucher;
         alert(`⚠️ NOMOR WHATSAPP TERDAFTAR!\n\nNomor WA (${phone}) sudah pernah digunakan untuk klaim Voucher Radja Kukus Bali (Kode: ${existing.code}).\n\nKetentuan: 1 Nomor HP hanya berhak mengklaim 1 Voucher.`);
         
@@ -272,18 +287,20 @@ function initLeadForm() {
 }
 
 function renderVoucherCard(voucher) {
+  const settings = window.insforgeDB.getPromoSettings();
+
   document.getElementById('v-display-name').textContent = voucher.name;
   document.getElementById('v-display-code').textContent = voucher.code;
-  document.getElementById('v-display-expiry').textContent = '26 Juli 2026 (16.00 - 21.00 WITA)';
+  document.getElementById('v-display-expiry').textContent = `${voucher.expiryDate || '26 Juli 2026'} (${voucher.claimHours || '16.00 - 21.00 WITA'})`;
 
   const titleElem = document.querySelector('.voucher-promo-title');
   const celebrationTitleElem = document.querySelector('.celebration-title');
 
   if (voucher.isB1G1) {
-    if (titleElem) titleElem.textContent = '🎁 VOUCHER PROMO BELI 1 GRATIS 1';
+    if (titleElem) titleElem.textContent = voucher.discount || '🎁 VOUCHER PROMO BELI 1 GRATIS 1';
     if (celebrationTitleElem) celebrationTitleElem.textContent = '🎉 SELAMAT! VOUCHER BELI 1 GRATIS 1 BERHASIL DIKLAIM! 🎉';
   } else {
-    if (titleElem) titleElem.textContent = '🎉 Special Treat Dimsum & Kukusan (GRATIS)';
+    if (titleElem) titleElem.textContent = voucher.discount || '🎉 Special Treat Dimsum & Kukusan (GRATIS)';
     if (celebrationTitleElem) celebrationTitleElem.textContent = '🎉 SELAMAT! VOUCHER TRAKTIR GRATIS BERHASIL DIKLAIM! 🎉';
   }
 
@@ -305,12 +322,12 @@ function renderVoucherCard(voucher) {
 
   const btnWA = document.getElementById('btn-wa-claim');
   if (btnWA) {
-    const promoName = voucher.isB1G1 ? 'Voucher Beli 1 Gratis 1' : 'Voucher Traktir Gratis';
+    const promoName = voucher.discount || 'Voucher Promo Radja Kukus';
     const waText = encodeURIComponent(
       `Halo Admin Radja Kukus Bali (087818720333), saya mau klaim ${promoName}!\n\n` +
       `*Nama*: ${voucher.name}\n` +
       `*Kode Voucher*: ${voucher.code}\n` +
-      `*Berlaku*: 26 Juli 2026 (Jam 16.00 - 21.00 WITA)\n\n` +
+      `*Berlaku*: ${voucher.expiryDate || '26 Juli 2026'} (Jam ${voucher.claimHours || '16.00 - 21.00 WITA'})\n\n` +
       `Mohon konfirmasi ketersediaan penukaran. Terima kasih!`
     );
     btnWA.href = `https://wa.me/${OFFICIAL_WA_NUMBER}?text=${waText}`;

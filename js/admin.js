@@ -1,6 +1,6 @@
 /**
  * Admin Portal Application Logic - Radja Kukus Bali
- * Mobile First App UI Driver with Camera QR Code Scanning & Campaign Reset
+ * Mobile First App UI Driver with Camera QR Code Scanning & Promo Settings Control
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -50,11 +50,82 @@ function showAdminDashboard() {
   initQRScanner();
   initExportCSV();
   initResetButton();
+  initPromoSettingsForm();
 }
 
 /**
- * Reset All Data to 0 for Real Promotion
+ * Mobile App Segmented Tab Switcher (Scanner, Leads, Settings)
  */
+window.switchAdminTab = function(tabName) {
+  const btnScanner = document.getElementById('tab-btn-scanner');
+  const btnLeads = document.getElementById('tab-btn-leads');
+  const btnSettings = document.getElementById('tab-btn-settings');
+
+  const contentScanner = document.getElementById('tab-content-scanner');
+  const contentLeads = document.getElementById('tab-content-leads');
+  const contentSettings = document.getElementById('tab-content-settings');
+
+  btnScanner.classList.remove('active');
+  btnLeads.classList.remove('active');
+  if (btnSettings) btnSettings.classList.remove('active');
+
+  contentScanner.style.display = 'none';
+  contentLeads.style.display = 'none';
+  if (contentSettings) contentSettings.style.display = 'none';
+
+  if (tabName === 'scanner') {
+    btnScanner.classList.add('active');
+    contentScanner.style.display = 'block';
+  } else if (tabName === 'leads') {
+    btnLeads.classList.add('active');
+    contentLeads.style.display = 'block';
+    loadLeadsTable();
+  } else if (tabName === 'settings') {
+    if (btnSettings) btnSettings.classList.add('active');
+    if (contentSettings) contentSettings.style.display = 'block';
+    loadPromoSettingsForm();
+  }
+};
+
+/**
+ * Load & Save Promo Settings
+ */
+function loadPromoSettingsForm() {
+  if (!window.insforgeDB) return;
+  const settings = window.insforgeDB.getPromoSettings();
+
+  document.getElementById('cfg-promo-status').value = settings.status || 'AKTIF';
+  document.getElementById('cfg-promo-title').value = settings.title || 'Voucher Traktir Kukusan & Dimsum Radja Kukus Bali!';
+  document.getElementById('cfg-primary-quota').value = settings.primaryQuota || 100;
+  document.getElementById('cfg-promo-date').value = settings.expiryDate || '26 Juli 2026';
+  document.getElementById('cfg-promo-hours').value = settings.claimHours || '16.00 - 21.00 WITA';
+  document.getElementById('cfg-fallback-promo-title').value = settings.fallbackTitle || 'Voucher Promo BELI 1 GRATIS 1 (Buy 1 Get 1 Free)';
+  document.getElementById('cfg-enable-fallback-b1g1').checked = settings.enableFallback !== false;
+}
+
+function initPromoSettingsForm() {
+  const form = document.getElementById('form-promo-settings');
+  if (!form) return;
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const newSettings = {
+      status: document.getElementById('cfg-promo-status').value,
+      title: document.getElementById('cfg-promo-title').value.trim(),
+      primaryQuota: parseInt(document.getElementById('cfg-primary-quota').value, 10) || 100,
+      expiryDate: document.getElementById('cfg-promo-date').value.trim(),
+      claimHours: document.getElementById('cfg-promo-hours').value.trim(),
+      fallbackTitle: document.getElementById('cfg-fallback-promo-title').value.trim(),
+      enableFallback: document.getElementById('cfg-enable-fallback-b1g1').checked
+    };
+
+    window.insforgeDB.savePromoSettings(newSettings);
+    loadDashboardStats();
+    alert('✅ PENGATURAN PROMO BERHASIL DISIMPAN! Seluruh halaman publik akan diperbarui secara otomatis.');
+  });
+}
+
 function initResetButton() {
   const btnReset = document.getElementById('btn-reset-db-zero');
   if (btnReset) {
@@ -69,32 +140,6 @@ function initResetButton() {
   }
 }
 
-/**
- * Mobile App Segmented Tab Switcher
- */
-window.switchAdminTab = function(tabName) {
-  const btnScanner = document.getElementById('tab-btn-scanner');
-  const btnLeads = document.getElementById('tab-btn-leads');
-  const contentScanner = document.getElementById('tab-content-scanner');
-  const contentLeads = document.getElementById('tab-content-leads');
-
-  if (tabName === 'scanner') {
-    btnScanner.classList.add('active');
-    btnLeads.classList.remove('active');
-    contentScanner.style.display = 'block';
-    contentLeads.style.display = 'none';
-  } else {
-    btnLeads.classList.add('active');
-    btnScanner.classList.remove('active');
-    contentLeads.style.display = 'block';
-    contentScanner.style.display = 'none';
-    loadLeadsTable();
-  }
-};
-
-/**
- * Load stats for summary cards
- */
 async function loadDashboardStats() {
   if (!window.insforgeDB) return;
   const stats = await window.insforgeDB.getDashboardStats();
@@ -105,9 +150,6 @@ async function loadDashboardStats() {
   document.getElementById('stat-conversion-rate').textContent = `${stats.conversionRate}%`;
 }
 
-/**
- * Load all leads into Mobile App Cards & Desktop Table
- */
 async function loadLeadsTable(searchTerm = '') {
   const mobileContainer = document.getElementById('mobile-leads-container');
   const tbody = document.getElementById('admin-leads-table-body');
