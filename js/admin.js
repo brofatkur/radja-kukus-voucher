@@ -1,6 +1,6 @@
 /**
  * Admin Portal Application Logic - Radja Kukus Bali
- * Mobile First App UI Driver with Camera QR Code Scanning & Mobile Data Cards List
+ * Mobile First App UI Driver with Camera QR Code Scanning & Campaign Reset
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -49,6 +49,24 @@ function showAdminDashboard() {
   initSearchAndRedeem();
   initQRScanner();
   initExportCSV();
+  initResetButton();
+}
+
+/**
+ * Reset All Data to 0 for Real Promotion
+ */
+function initResetButton() {
+  const btnReset = document.getElementById('btn-reset-db-zero');
+  if (btnReset) {
+    btnReset.addEventListener('click', () => {
+      if (confirm('Apakah Anda yakin ingin MENGHAPUS SELURUH DATA SAMPLE & MEMULAI PROMOSI DARI 0 LEAD?')) {
+        window.insforgeDB.resetDataToZero();
+        loadDashboardStats();
+        loadLeadsTable();
+        alert('✅ Database telah BERHASIL DIRESET KE 0! Siap untuk promosi real.');
+      }
+    });
+  }
 }
 
 /**
@@ -108,7 +126,7 @@ async function loadLeadsTable(searchTerm = '') {
   });
 
   if (filtered.length === 0) {
-    const emptyHtml = `<div style="text-align:center; padding:2rem; color:#888;">Tidak ada data lead ditemukan.</div>`;
+    const emptyHtml = `<div style="text-align:center; padding:2rem; color:#888;">Belum ada data lead masuk (0 Lead). Siap menerima klaim real!</div>`;
     if (mobileContainer) mobileContainer.innerHTML = emptyHtml;
     if (tbody) tbody.innerHTML = `<tr><td colspan="6">${emptyHtml}</td></tr>`;
     return;
@@ -126,7 +144,6 @@ async function loadLeadsTable(searchTerm = '') {
 
     const waLink = `https://wa.me/${item.whatsapp}?text=${encodeURIComponent('Halo ' + item.name + ', salam hangat dari Radja Kukus Bali!')}`;
 
-    // 1. Mobile App Card View
     if (mobileContainer) {
       const card = document.createElement('div');
       card.className = 'lead-item-card';
@@ -151,7 +168,6 @@ async function loadLeadsTable(searchTerm = '') {
       mobileContainer.appendChild(card);
     }
 
-    // 2. Desktop Table Fallback
     if (tbody) {
       const tr = document.createElement('tr');
       tr.innerHTML = `

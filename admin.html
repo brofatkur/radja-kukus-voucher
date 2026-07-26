@@ -103,7 +103,7 @@
           </div>
           <div class="stat-card-app gold">
             <span class="stat-app-label">Sisa Kuota</span>
-            <span class="stat-app-value" id="stat-total-active">0</span>
+            <span class="stat-app-value" id="stat-total-active">100</span>
           </div>
           <div class="stat-card-app blue">
             <span class="stat-app-label">Konversi Rate</span>
@@ -114,10 +114,15 @@
         <!-- Lead List Card -->
         <div class="admin-app-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
-            <div class="app-card-title">📊 Riwayat Customer</div>
-            <button id="btn-export-csv" class="btn-export-csv" style="padding: 6px 12px; font-size: 0.78rem;">
-              📥 Export CSV
-            </button>
+            <div class="app-card-title">📊 Riwayat Customer Real</div>
+            <div style="display: flex; gap: 6px;">
+              <button id="btn-export-csv" class="btn-export-csv" style="padding: 6px 10px; font-size: 0.75rem;">
+                📥 Export CSV
+              </button>
+              <button id="btn-reset-db-zero" style="background:#D32F2F; color:white; padding: 6px 10px; border-radius:8px; font-weight:700; font-size: 0.75rem;">
+                🗑️ Reset Ke 0
+              </button>
+            </div>
           </div>
 
           <div style="margin-bottom: 1rem;">
