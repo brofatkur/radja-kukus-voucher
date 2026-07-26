@@ -1,6 +1,6 @@
 /**
  * Public Application Logic - Radja Kukus Bali
- * High-Conversion Lead Magnet with Hero CTA Scroll, Realtime Percentage Quota, & Mobile-First UX
+ * High-Conversion Lead Magnet with Fireworks Celebration, Canvas PNG Exporter, & Screenshot Cashier Guide
  */
 
 const OFFICIAL_WA_NUMBER = '6287818720333';
@@ -18,6 +18,38 @@ document.addEventListener('DOMContentLoaded', () => {
 let currentGeneratedVoucher = null;
 
 /**
+ * Trigger Fireworks Celebration Animation
+ */
+function launchFireworks() {
+  if (typeof confetti === 'function') {
+    // Left & Right Fireworks Launch
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+
+    setTimeout(() => {
+      confetti({
+        particleCount: 80,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 }
+      });
+    }, 250);
+
+    setTimeout(() => {
+      confetti({
+        particleCount: 80,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 }
+      });
+    }, 400);
+  }
+}
+
+/**
  * Hero CTA Scroll to Lead Form
  */
 function initHeroCTA() {
@@ -27,7 +59,6 @@ function initHeroCTA() {
   if (btnCTA && leadFormCard) {
     btnCTA.addEventListener('click', () => {
       leadFormCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Focus on first input for better UX
       const nameInput = document.getElementById('customer-name');
       if (nameInput) {
         setTimeout(() => nameInput.focus(), 500);
@@ -175,7 +206,7 @@ function triggerNewUserSocialProof(name) {
 }
 
 /**
- * Lead Form Handling
+ * Lead Form Handling & Voucher Claim Trigger
  */
 function initLeadForm() {
   const form = document.getElementById('lead-form');
@@ -218,6 +249,9 @@ function initLeadForm() {
 
       renderVoucherCard(voucher);
       triggerNewUserSocialProof(name);
+
+      // Launch fireworks animation celebration!
+      launchFireworks();
 
       form.reset();
 
@@ -279,6 +313,9 @@ function renderVoucherCard(voucher) {
   }
 }
 
+/**
+ * Robust PNG Download with DataURL/Blob Fallback for Mobile Browsers
+ */
 function downloadVoucherImage(code) {
   const cardElem = document.getElementById('voucher-printable-card');
   if (!cardElem) return;
@@ -296,24 +333,29 @@ function downloadVoucherImage(code) {
   html2canvas(cardElem, {
     scale: 2,
     useCORS: true,
-    backgroundColor: null
+    backgroundColor: '#7A1212'
   }).then((canvas) => {
-    const imageURI = canvas.toDataURL('image/png');
-    const link = document.createElement('a');
-    link.download = `Voucher_Radja_Kukus_${code}.png`;
-    link.href = imageURI;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const imageURI = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `Voucher_Radja_Kukus_${code}.png`;
+      link.href = imageURI;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-    btnDownload.innerHTML = '✅ Gambar Berhasil Diunduh!';
+      btnDownload.innerHTML = '✅ Gambar Berhasil Diunduh!';
+    } catch (e) {
+      alert('TIPS: Jika otomatis unduh tidak berjalan di HP Anda, silakan LAKUKAN SCREENSHOT kartu voucher ini dan tunjukkan ke kasir!');
+    }
+
     setTimeout(() => {
       btnDownload.innerHTML = origBtnText;
       btnDownload.disabled = false;
     }, 2500);
   }).catch((err) => {
     console.error('Error generating canvas PNG:', err);
-    alert('Terjadi kesalahan saat mengunduh gambar voucher.');
+    alert('TIPS: Silakan lakukan SCREENSHOT layar kartu voucher ini dan tunjukkan ke kasir outlet Radja Kukus Bali.');
     btnDownload.innerHTML = origBtnText;
     btnDownload.disabled = false;
   });
