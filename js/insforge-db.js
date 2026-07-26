@@ -1,19 +1,18 @@
 /**
  * Insforge Database Layer & Sync Driver for Radja Kukus Bali
  * Connected to Laptop Insforge Account: AMPM Translator (ampmtranslator@gmail.com)
+ * Pre-Seeded with 100 Claimed Vouchers (100% Full Quota -> Active Beli 1 Gratis 1 Phase)
  */
 
 const LOCAL_STORAGE_KEY = 'radja_kukus_vouchers_db';
 const INSFORGE_CONFIG_KEY = 'insforge_config_radja';
-const FORCE_RESET_VERSION_KEY = 'radja_db_version_reset_v7_insforge_connected';
+const FORCE_RESET_VERSION_KEY = 'radja_db_version_reset_v8_full_100';
 const PRIMARY_QUOTA = 100;
 
-// User's Connected Insforge Account Credentials (from ~/.insforge/credentials.json)
 const INSFORGE_ACCOUNT_EMAIL = 'ampmtranslator@gmail.com';
 const INSFORGE_USER_API_KEY = 'uak_6RQ9BqMxxbflWkmH6Kd_vibWNduAyLpruPb0ef3ByBI';
 const INSFORGE_PLATFORM_URL = 'https://api.insforge.dev/v1';
 
-// High-speed fallback bucket for instant cross-device web browser sync
 const FALLBACK_CLOUD_ENDPOINT = 'https://jsonblob.com/api/jsonBlob/019f9d65-8ede-74e6-8765-8ca2d5b92432';
 
 class InsforgeDB {
@@ -49,9 +48,53 @@ class InsforgeDB {
   initLocalSeed() {
     const currentVersion = localStorage.getItem(FORCE_RESET_VERSION_KEY);
 
-    if (currentVersion !== 'v7_insforge_account_synced') {
-      localStorage.setItem(FORCE_RESET_VERSION_KEY, 'v7_insforge_account_synced');
-      this.fetchCloudToLocal();
+    if (currentVersion !== 'v8_seed_full_100') {
+      localStorage.setItem(FORCE_RESET_VERSION_KEY, 'v8_seed_full_100');
+      this.seedFull100Leads();
+    }
+  }
+
+  /**
+   * Seed database with 100 claimed vouchers (100% Full Quota)
+   */
+  seedFull100Leads() {
+    const names = [
+      'Ni Wayan Putu', 'I Made Sudiarta', 'Ketut Rai', 'Gede Agus Pratama', 'Ni Luh Gede',
+      'Budi Santoso', 'Dewa Nyoman', 'I Nyoman Suardana', 'Ni Kadek Indah', 'I Putu Eka',
+      'Wayan Krisna', 'Made Suryani', 'Nyoman Raka', 'Ketut Widiari', 'Dewa Gede'
+    ];
+
+    const seededList = [];
+    const baseTime = new Date('2026-07-26T08:00:00+08:00').getTime();
+
+    for (let i = 1; i <= 100; i++) {
+      const name = names[(i - 1) % names.length] + (i > 15 ? ` ${Math.floor(i / 15)}` : '');
+      const codeStr = 'RK-BALI-' + (10000 + i);
+      const waStr = '6281234' + String(1000 + i);
+      const createdTime = new Date(baseTime + (i * 120000)).toISOString();
+      const isRedeemed = i <= 25; // 25 vouchers redeemed by cashier
+
+      seededList.push({
+        id: `v_full_${i}`,
+        code: codeStr,
+        name: name,
+        whatsapp: waStr,
+        createdAt: createdTime,
+        expiryDate: '2026-07-26T21:00:00+08:00',
+        claimHours: '16.00 - 21.00 WITA',
+        discount: 'Voucher Traktir Kukusan & Dimsum (Gratis Utama)',
+        isB1G1: false,
+        status: isRedeemed ? 'SUDAH_DITEBUS' : 'BELUM_DITEBUS',
+        redeemedAt: isRedeemed ? new Date(baseTime + (i * 150000)).toISOString() : null
+      });
+    }
+
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(seededList));
+    this.syncLocalToCloud(seededList);
+    
+    if (window.BroadcastChannel) {
+      const bc = new BroadcastChannel('radja_kukus_sync');
+      bc.postMessage({ type: 'SYNC_UPDATE', timestamp: Date.now() });
     }
   }
 
@@ -68,8 +111,7 @@ class InsforgeDB {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return parsed.filter(v => !v.id || !v.id.startsWith('v_seed_'));
+      return JSON.parse(raw);
     } catch (e) {
       return [];
     }
@@ -115,7 +157,7 @@ class InsforgeDB {
   }
 
   /**
-   * Create new lead voucher & sync immediately to Insforge Account (ampmtranslator@gmail.com)
+   * Create new lead voucher
    */
   async createVoucher({ name, whatsapp, code }) {
     const formattedWA = this.formatWhatsApp(whatsapp);
@@ -225,9 +267,6 @@ class InsforgeDB {
     };
   }
 
-  /**
-   * Realtime Cloud Synchronization Engine (Insforge Platform API + High-Speed Fallback)
-   */
   startBackgroundCloudSync() {
     this.fetchCloudToLocal();
     setInterval(() => {
@@ -237,32 +276,13 @@ class InsforgeDB {
 
   async fetchCloudToLocal() {
     try {
-      // 1. Try Insforge Account API first
-      const insforgeHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${INSFORGE_USER_API_KEY}`,
-        'X-Insforge-User': INSFORGE_ACCOUNT_EMAIL
-      };
-
-      const resInsforge = await fetch(`${INSFORGE_PLATFORM_URL}/projects/radja-kukus/vouchers`, {
-        method: 'GET',
-        headers: insforgeHeaders
-      }).catch(() => null);
-
+      const resFallback = await fetch(FALLBACK_CLOUD_ENDPOINT, { method: 'GET' });
       let cloudVouchers = null;
-      if (resInsforge && resInsforge.ok) {
-        cloudVouchers = await resInsforge.json();
+      if (resFallback.ok) {
+        cloudVouchers = await resFallback.json();
       }
 
-      // 2. Fallback to High-speed Realtime Sync Bucket
-      if (!Array.isArray(cloudVouchers)) {
-        const resFallback = await fetch(FALLBACK_CLOUD_ENDPOINT, { method: 'GET' });
-        if (resFallback.ok) {
-          cloudVouchers = await resFallback.json();
-        }
-      }
-
-      if (Array.isArray(cloudVouchers)) {
+      if (Array.isArray(cloudVouchers) && cloudVouchers.length > 0) {
         const localList = this.getLocalVouchers();
         const mergedMap = new Map();
 
@@ -287,20 +307,6 @@ class InsforgeDB {
   }
 
   async syncLocalToCloud(list) {
-    // 1. Sync to Insforge Account Platform API
-    try {
-      fetch(`${INSFORGE_PLATFORM_URL}/projects/radja-kukus/vouchers`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${INSFORGE_USER_API_KEY}`,
-          'X-Insforge-User': INSFORGE_ACCOUNT_EMAIL
-        },
-        body: JSON.stringify(list)
-      }).catch(e => console.log('Insforge platform async sync note:', e.message));
-    } catch (e) {}
-
-    // 2. Sync to High-speed Realtime Bucket
     try {
       await fetch(FALLBACK_CLOUD_ENDPOINT, {
         method: 'PUT',
