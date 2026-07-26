@@ -1,11 +1,12 @@
 /**
  * Public Application Logic - Radja Kukus Bali
- * High-Conversion Lead Magnet with Quota Counter, Social Proof Toasts, & WA Contact 087818720333
+ * High-Conversion Lead Magnet with Hero CTA Scroll, Realtime Percentage Quota, & Mobile-First UX
  */
 
-const OFFICIAL_WA_NUMBER = '6287818720333'; // 087818720333
+const OFFICIAL_WA_NUMBER = '6287818720333';
 
 document.addEventListener('DOMContentLoaded', () => {
+  initHeroCTA();
   initLeadForm();
   renderMenuCatalog('all');
   initCategoryFilters();
@@ -17,7 +18,26 @@ document.addEventListener('DOMContentLoaded', () => {
 let currentGeneratedVoucher = null;
 
 /**
- * Realtime Quota Counter & Progress Bar UI Update
+ * Hero CTA Scroll to Lead Form
+ */
+function initHeroCTA() {
+  const btnCTA = document.getElementById('btn-hero-cta');
+  const leadFormCard = document.querySelector('.lead-form-card');
+
+  if (btnCTA && leadFormCard) {
+    btnCTA.addEventListener('click', () => {
+      leadFormCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Focus on first input for better UX
+      const nameInput = document.getElementById('customer-name');
+      if (nameInput) {
+        setTimeout(() => nameInput.focus(), 500);
+      }
+    });
+  }
+}
+
+/**
+ * Realtime Quota Counter & Dynamic Percentage Calculation
  */
 function updateQuotaUI() {
   if (!window.insforgeDB) return;
@@ -26,10 +46,12 @@ function updateQuotaUI() {
   const remainingElem = document.getElementById('quota-remaining-count');
   const totalElem = document.getElementById('quota-total-count');
   const barElem = document.getElementById('quota-progress-fill');
+  const percentElem = document.getElementById('quota-percent-text');
   const badgeElem = document.getElementById('quota-status-text');
 
   if (remainingElem) remainingElem.textContent = quota.remaining;
   if (totalElem) totalElem.textContent = quota.totalQuota;
+  if (percentElem) percentElem.textContent = `${quota.percentageClaimed}%`;
 
   if (barElem) {
     barElem.style.width = `${quota.percentageClaimed}%`;
@@ -37,10 +59,11 @@ function updateQuotaUI() {
 
   if (badgeElem) {
     if (quota.remaining <= 5) {
-      badgeElem.textContent = '🔥 HAMPIR HABIS! Sisa beberapa voucher lagi!';
-      badgeElem.style.color = '#FF4D4D';
+      badgeElem.innerHTML = `🔥 <strong>HAMPIR HABIS!</strong> Sisa <strong>${quota.remaining}</strong> voucher saja!`;
+      badgeElem.style.color = '#FF3B30';
     } else {
-      badgeElem.textContent = `⚡ Terisi ${quota.percentageClaimed}% - Segera Klaim Sebelum Kehabisan!`;
+      badgeElem.innerHTML = `⚡ <strong>${quota.percentageClaimed}% Terisi Realtime</strong> • Segera Klaim Sebelum Kehabisan!`;
+      badgeElem.style.color = '#A81C1C';
     }
   }
 }
@@ -55,7 +78,6 @@ function initCountdownTimer() {
 
   if (!hoursElem) return;
 
-  // Target: 26 Juli 2026, 21:00:00 WITA (UTC+8)
   const targetDate = new Date('2026-07-26T21:00:00+08:00').getTime();
 
   function updateTimer() {
@@ -116,18 +138,14 @@ function initSocialProofToasts() {
     `;
 
     toastContainer.appendChild(toast);
-
-    // Fade in
     setTimeout(() => toast.classList.add('show'), 100);
 
-    // Auto remove after 4.5s
     setTimeout(() => {
       toast.classList.remove('show');
       setTimeout(() => toast.remove(), 400);
     }, 4500);
   }
 
-  // Show first toast after 3 seconds, then cycle every 7-10 seconds
   setTimeout(() => {
     showNextToast();
     setInterval(showNextToast, 8500);
@@ -183,13 +201,11 @@ function initLeadForm() {
       return;
     }
 
-    // UI Loading state
     const originalText = btnSubmit.innerHTML;
     btnSubmit.innerHTML = '⏳ Memproses & Mengklaim Voucher...';
     btnSubmit.disabled = true;
 
     try {
-      // Create voucher entry via Insforge DB / Local storage sync
       const voucher = await window.insforgeDB.createVoucher({
         name: name,
         whatsapp: phone
@@ -197,19 +213,14 @@ function initLeadForm() {
 
       currentGeneratedVoucher = voucher;
 
-      // Update realtime quota
+      // Update dynamic percentage and quota count
       updateQuotaUI();
 
-      // Render voucher details on UI
       renderVoucherCard(voucher);
-
-      // Trigger high-conversion social proof celebration
       triggerNewUserSocialProof(name);
 
-      // Reset form
       form.reset();
 
-      // Show result section & smooth scroll
       const resultSec = document.getElementById('voucher-result-section');
       resultSec.style.display = 'block';
       resultSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -228,17 +239,11 @@ function initLeadForm() {
   });
 }
 
-/**
- * Render generated voucher card details & QR Code
- */
 function renderVoucherCard(voucher) {
   document.getElementById('v-display-name').textContent = voucher.name;
   document.getElementById('v-display-code').textContent = voucher.code;
-
-  // Fixed Expiry Display: 26 Juli 2026 (Jam 16.00 - 21.00 WITA)
   document.getElementById('v-display-expiry').textContent = '26 Juli 2026 (16.00 - 21.00 WITA)';
 
-  // Render QR Code
   const qrContainer = document.getElementById('voucher-qrcode');
   qrContainer.innerHTML = '';
 
@@ -255,7 +260,6 @@ function renderVoucherCard(voucher) {
     qrContainer.innerHTML = `<div style="font-size:0.8rem; padding:10px;">[QR: ${voucher.code}]</div>`;
   }
 
-  // Setup WhatsApp Claim Button (Contact: 087818720333)
   const btnWA = document.getElementById('btn-wa-claim');
   if (btnWA) {
     const waText = encodeURIComponent(
@@ -269,16 +273,12 @@ function renderVoucherCard(voucher) {
     btnWA.target = '_blank';
   }
 
-  // Setup Download Image Button
   const btnDownload = document.getElementById('btn-download-voucher');
   if (btnDownload) {
     btnDownload.onclick = () => downloadVoucherImage(voucher.code);
   }
 }
 
-/**
- * Export Voucher Card element as downloadable PNG image using html2canvas
- */
 function downloadVoucherImage(code) {
   const cardElem = document.getElementById('voucher-printable-card');
   if (!cardElem) return;
@@ -319,9 +319,6 @@ function downloadVoucherImage(code) {
   });
 }
 
-/**
- * Catalog Menu Renderer with WA Contact 087818720333
- */
 function renderMenuCatalog(categoryFilter = 'all') {
   const gridContainer = document.getElementById('menu-grid');
   if (!gridContainer || !window.RADJA_MENU_DATA) return;

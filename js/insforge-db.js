@@ -1,6 +1,6 @@
 /**
  * Insforge Database Layer & Sync Driver for Radja Kukus Bali
- * Handles Quota Management (100 Vouchers), Expiry Date (26 Juli 2026, 16.00 - 21.00 WITA), & Lead Tracking
+ * Handles Realtime Dynamic Quota (100 Vouchers max), Expiry Date, & Realtime Percentage Math
  */
 
 const LOCAL_STORAGE_KEY = 'radja_kukus_vouchers_db';
@@ -31,7 +31,7 @@ class InsforgeDB {
 
   initLocalSeed() {
     if (!localStorage.getItem(LOCAL_STORAGE_KEY)) {
-      // Seed with 83 initial claims so quota remaining is 17 (creates high urgency!)
+      // Seed initial claims so total claim starts at 83, sisa 17 (dapat bertambah/berkurang realtime)
       const initialSeed = [];
       const sampleNames = [
         'Kadek Arimbawa', 'Ni Luh Gede', 'I Wayan Sudiarta', 'Made Suryani',
@@ -49,7 +49,7 @@ class InsforgeDB {
           name: name,
           whatsapp: `62812${Math.floor(1000000 + Math.random() * 8999999)}`,
           createdAt: new Date(Date.now() - (83 - i) * 180000).toISOString(),
-          expiryDate: '2026-07-26T21:00:00+08:00', // 26 Juli 2026 21:00 WITA
+          expiryDate: '2026-07-26T21:00:00+08:00',
           discount: 'Voucher Traktir Kukusan & Dimsum (Diskon Special)',
           status: i % 4 === 0 ? 'SUDAH_DITEBUS' : 'BELUM_DITEBUS',
           redeemedAt: i % 4 === 0 ? new Date(Date.now() - (83 - i) * 120000).toISOString() : null
@@ -76,7 +76,7 @@ class InsforgeDB {
   }
 
   /**
-   * Get quota statistics
+   * Calculate Realtime Dynamic Quota & Percentage
    */
   getQuotaInfo() {
     const list = this.getLocalVouchers();
@@ -108,19 +108,19 @@ class InsforgeDB {
       name: name.trim(),
       whatsapp: this.formatWhatsApp(whatsapp),
       createdAt: new Date().toISOString(),
-      expiryDate: '2026-07-26T21:00:00+08:00', // 26 Juli 2026 21:00 WITA
+      expiryDate: '2026-07-26T21:00:00+08:00',
       claimHours: '16.00 - 21.00 WITA',
       discount: 'Voucher Traktir Kukusan & Dimsum (Berlaku 26 Juli 2026, 16:00-21:00 WITA)',
       status: 'BELUM_DITEBUS',
       redeemedAt: null
     };
 
-    // 1. Save to LocalStorage
+    // Save to LocalStorage
     const vouchers = this.getLocalVouchers();
     vouchers.unshift(newEntry);
     this.saveLocalVouchers(vouchers);
 
-    // 2. Sync to Insforge Backend Database API
+    // Sync to Insforge Backend API
     try {
       if (this.config.enabled && this.config.endpoint) {
         fetch(`${this.config.endpoint}/vouchers`, {

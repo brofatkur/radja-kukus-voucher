@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Voucher Traktir Kukusan & Dimsum - Radja Kukus Bali (26 Juli 2026)</title>
   <meta name="description" content="Klaim voucher promo terbatas 100 kuota traktir kukusan & dimsum khas Radja Kukus Bali. Berlaku 26 Juli 2026 Jam 16.00 - 21.00 WITA!">
 
@@ -17,10 +17,10 @@
 
   <!-- Top Announcement Bar -->
   <div class="top-announcement-bar">
-    <span>🔥 PROMO KHUSUS HARI INI: <strong>26 JULI 2026</strong> | KLAIM JAM <strong>16:00 - 21:00 WITA</strong> | WA: <strong>0878-1872-0333</strong></span>
+    <span>🔥 PROMO <strong>26 JULI 2026</strong> | KLAIM <strong>16:00 - 21:00 WITA</strong> | WA: <strong>0878-1872-0333</strong></span>
   </div>
 
-  <!-- Site Header -->
+  <!-- Site Header (Public Page - Admin Nav Hidden) -->
   <header class="site-header">
     <div class="header-container">
       <div class="brand-logo-group">
@@ -33,9 +33,6 @@
       <div class="nav-links">
         <a href="https://wa.me/6287818720333" target="_blank" class="btn-wa-header">
           💬 WA 087818720333
-        </a>
-        <a href="admin.html" class="btn-admin-nav">
-          🔒 Portal Admin
         </a>
       </div>
     </div>
@@ -50,6 +47,13 @@
       <p class="hero-subtitle">
         Berlaku Khusus <strong>26 Juli 2026</strong> (Jam Operasional Klaim: <strong>16.00 - 21.00 WITA</strong>). Dapatkan promo spesial dengan mengklaim voucher sebelum kuota habis!
       </p>
+
+      <!-- Prominent Hero CTA Button after Headline -->
+      <div class="hero-cta-wrapper">
+        <button id="btn-hero-cta" class="btn-hero-cta">
+          ⚡ KLAIM VOUCHER HARI INI (GRATIS) 🎁
+        </button>
+      </div>
 
       <!-- Countdown Urgency Timer -->
       <div class="urgency-timer-box">
@@ -66,19 +70,21 @@
       <!-- Lead Capture Form Card -->
       <div class="lead-form-card">
         
-        <!-- Realtime Quota Progress Bar -->
+        <!-- Realtime Quota Progress Bar with Dynamic Percentage Math -->
         <div class="quota-container">
           <div class="quota-header">
-            <span class="quota-title">🔥 Live Kuota Voucher Terklaim:</span>
-            <span class="quota-count"><strong id="quota-remaining-count">17</strong> / <span id="quota-total-count">100</span> Sisa Voucher</span>
+            <span class="quota-title">🔥 Live Kuota Realtime:</span>
+            <span class="quota-count">
+              <strong id="quota-percent-text">83%</strong> Terisi • Sisa <strong id="quota-remaining-count">17</strong> / <span id="quota-total-count">100</span> Voucher
+            </span>
           </div>
           <div class="quota-progress-track">
             <div id="quota-progress-fill" class="quota-progress-fill" style="width: 83%;"></div>
           </div>
-          <div id="quota-status-text" class="quota-status-text">⚡ Terisi 83% - Segera Klaim Sebelum Kehabisan!</div>
+          <div id="quota-status-text" class="quota-status-text">⚡ 83% Terisi Realtime • Segera Klaim Sebelum Kehabisan!</div>
         </div>
 
-        <h2 class="form-header-title" style="margin-top: 1rem;">🎁 Masukkan Data Untuk Klaim Voucher</h2>
+        <h2 class="form-header-title" style="margin-top: 0.75rem;">🎁 Masukkan Data Untuk Klaim Voucher</h2>
         <p class="form-header-subtitle">Voucher dengan Nomor Kode Unik & QR Code akan langsung dibuat</p>
 
         <form id="lead-form">
@@ -170,7 +176,7 @@
       <p class="section-subtitle">Disajikan segar & hangat setiap hari. Nikmati bersama voucher promo Anda!</p>
     </div>
 
-    <!-- Category Tabs -->
+    <!-- Category Tabs (Horizontal Scrollable on Mobile) -->
     <div class="category-tabs">
       <button class="category-tab-btn active" data-category="all">Semua Menu</button>
       <button class="category-tab-btn" data-category="kukusan">Kukusan Special</button>
