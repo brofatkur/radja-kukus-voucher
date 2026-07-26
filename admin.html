@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal - Verifikasi & Scanner Voucher Radja Kukus Bali</title>
+
+  <!-- CSS Design System -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Camera QR Code Scanner Library (Html5Qrcode) -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body class="admin-body">
+
+  <!-- Admin Navigation Header -->
+  <header class="admin-header">
+    <div class="header-container">
+      <div class="brand-logo-group">
+        <img src="assets/logo.png" alt="Radja Kukus Bali" class="brand-logo-img">
+        <div class="brand-titles">
+          <span class="brand-name">Portal Admin Outlet</span>
+          <span class="brand-tagline">Radja Kukus Bali - Scanner & Verifikasi</span>
+        </div>
+      </div>
+      <div>
+        <a href="index.html" class="btn-admin-nav">
+          🌐 Ke Halaman Publik
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-container">
+
+    <!-- Login PIN Card -->
+    <div id="admin-auth-card" class="lead-form-card" style="margin: 3rem auto; text-align: center;">
+      <h2 class="form-header-title">🔐 Akses Kasir & Admin</h2>
+      <p class="form-header-subtitle">Masukkan PIN Kasir untuk mengakses scanner & data lead</p>
+
+      <div class="form-group" style="margin-top: 1.5rem;">
+        <input type="password" id="admin-pin-input" class="form-control" placeholder="Masukkan PIN (Default: 1234)" style="text-align: center; font-size: 1.3rem; letter-spacing: 4px;">
+      </div>
+
+      <button id="btn-admin-login" class="btn-submit-lead">
+        🔓 Masuk Ke Dashboard
+      </button>
+      <p style="font-size:0.75rem; color:#888; margin-top:12px;">*PIN default demo: <strong>1234</strong></p>
+    </div>
+
+    <!-- Main Admin Dashboard (Hidden until PIN authenticated) -->
+    <div id="admin-main-content" style="display: none;">
+
+      <!-- Summary Statistics Grid -->
+      <div class="admin-stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Lead Masuk</div>
+          <div class="stat-value" id="stat-total-leads">0</div>
+        </div>
+
+        <div class="stat-card green">
+          <div class="stat-label">Voucher Ditebus</div>
+          <div class="stat-value" id="stat-total-redeemed">0</div>
+        </div>
+
+        <div class="stat-card gold">
+          <div class="stat-label">Voucher Aktif</div>
+          <div class="stat-value" id="stat-total-active">0</div>
+        </div>
+
+        <div class="stat-card blue">
+          <div class="stat-label">Redemption Rate</div>
+          <div class="stat-value" id="stat-conversion-rate">0%</div>
+        </div>
+      </div>
+
+      <!-- Verification & Scanner Box -->
+      <div id="admin-verify-container" class="admin-verify-box">
+        <div class="verify-box-header">
+          <div>
+            <h2>🔍 Verifikasi Voucher Pelanggan</h2>
+            <p style="font-size:0.85rem; color:#666;">Scan QR Code dari HP/Gambar pelanggan atau ketik kode manual</p>
+          </div>
+          <button id="btn-open-scanner" class="btn-scan-qr">
+            📷 Scan QR Code Kamera
+          </button>
+        </div>
+
+        <div class="verify-input-group">
+          <input type="text" id="input-verify-code" class="form-control" placeholder="Contoh: RK-BALI-88X92" style="font-size: 1.1rem; text-transform: uppercase;">
+          <button id="btn-search-verify" class="btn-scan-qr" style="background: var(--balinese-green);">
+            Verifikasi Kode
+          </button>
+        </div>
+
+        <!-- Verification Result Card -->
+        <div id="redeem-result-box" class="redeem-result-card"></div>
+      </div>
+
+      <!-- Lead Database Table Card -->
+      <div class="admin-table-card">
+        <div class="table-header-bar">
+          <div>
+            <h3>📊 Data Lead & Riwayat Voucher</h3>
+            <p style="font-size:0.8rem; color:#666;">Terkoneksi real-time dengan Database Insforge</p>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="table-search-input" class="form-control" placeholder="Cari Nama / Kode / WA..." style="padding: 8px 14px; font-size: 0.85rem; width: 220px;">
+            <button id="btn-export-csv" class="btn-export-csv">
+              📥 Export CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="leads-table">
+            <thead>
+              <tr>
+                <th>Kode Voucher</th>
+                <th>Nama Pelanggan</th>
+                <th>No. WhatsApp</th>
+                <th>Tanggal Klaim</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="admin-leads-table-body">
+              <!-- Dynamically populated by admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Camera Scanner Modal -->
+  <div id="scanner-modal" class="scanner-modal-backdrop">
+    <div class="scanner-modal-content">
+      <h3>📷 Arahkan Kamera Ke QR Code Voucher</h3>
+      <p style="font-size:0.8rem; color:#666; margin-bottom: 0.5rem;">Sistem akan otomatis membaca nomor voucher</p>
+
+      <div id="qr-reader-container"></div>
+
+      <button id="btn-close-scanner" class="btn-close-scanner" style="margin-top: 1rem;">
+        ✕ Tutup Kamera
+      </button>
+    </div>
+  </div>
+
+  <!-- Database & Admin Logic Scripts -->
+  <script src="js/insforge-db.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
