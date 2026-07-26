@@ -1,10 +1,11 @@
 /**
  * Insforge Database Layer & Sync Driver for Radja Kukus Bali
- * Handles Realtime Dynamic Quota (100 Vouchers max), Expiry Date, & Real Campaign Reset (Start from 0)
+ * Handles Realtime Dynamic Quota (100 Vouchers max), Expiry Date, & Forced Hard Reset to 0
  */
 
 const LOCAL_STORAGE_KEY = 'radja_kukus_vouchers_db';
 const INSFORGE_CONFIG_KEY = 'insforge_config_radja';
+const FORCE_RESET_VERSION_KEY = 'radja_db_version_reset_v3';
 const TOTAL_QUOTA = 100;
 
 class InsforgeDB {
@@ -29,9 +30,18 @@ class InsforgeDB {
     };
   }
 
+  /**
+   * Hard Reset to 0 Leads across all client browsers
+   */
   initLocalSeed() {
-    // Check if initialized before; if not, set to empty array [] so campaign starts fresh from 0
-    if (localStorage.getItem(LOCAL_STORAGE_KEY) === null) {
+    const currentVersion = localStorage.getItem(FORCE_RESET_VERSION_KEY);
+
+    // Force wipe old 83% seed data if not yet reset on version v3
+    if (currentVersion !== 'v3_zero_leads') {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      localStorage.setItem(FORCE_RESET_VERSION_KEY, 'v3_zero_leads');
+      this.resetDataToZero();
+    } else if (localStorage.getItem(LOCAL_STORAGE_KEY) === null) {
       this.resetDataToZero();
     }
   }
@@ -49,7 +59,12 @@ class InsforgeDB {
 
   getLocalVouchers() {
     try {
-      return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      // Filter out any leftover seed items if any
+      const cleaned = parsed.filter(v => !v.id || !v.id.startsWith('v_seed_'));
+      return cleaned;
     } catch (e) {
       return [];
     }
