@@ -1,6 +1,5 @@
 /* ==========================================================================
-   Radja Kukus Bali - Native Mobile App-First Design System
-   Designed to look & feel like a premium native iOS / Android application
+   Radja Kukus Bali - High Conversion, WhatsApp Share & Mobile First Styles
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -8,7 +7,7 @@
 :root {
   --primary-red: #A81C1C;
   --primary-red-dark: #7A1212;
-  --primary-red-light: #FFF0F0;
+  --primary-red-light: #FFECEC;
   --balinese-green: #1E4D2B;
   --balinese-green-dark: #12331B;
   --gold-accent: #D4AF37;
@@ -42,7 +41,6 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overscroll-behavior-y: none;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -64,10 +62,6 @@ button {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ==========================================================================
-   Top Announcement Bar (Mobile Scaled)
-   ========================================================================== */
-
 .top-announcement-bar {
   background: #1C1C1E;
   color: var(--gold-accent);
@@ -82,10 +76,6 @@ button {
   text-overflow: ellipsis;
 }
 
-/* ==========================================================================
-   App Header & Navigation
-   ========================================================================== */
-
 .site-header, .admin-header {
   background: rgba(122, 18, 18, 0.96);
   color: white;
@@ -94,7 +84,6 @@ button {
   top: 0;
   z-index: 100;
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 
@@ -139,7 +128,6 @@ button {
   color: var(--gold-accent);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .btn-wa-header {
@@ -154,10 +142,6 @@ button {
   gap: 5px;
   box-shadow: 0 3px 10px rgba(37, 211, 102, 0.3);
 }
-
-/* ==========================================================================
-   Hero & Lead Capture Section (Mobile App Layout)
-   ========================================================================== */
 
 .hero-section {
   position: relative;
@@ -198,10 +182,6 @@ button {
   margin-bottom: 1rem;
 }
 
-.hero-cta-wrapper {
-  margin: 1rem 0 1.25rem;
-}
-
 .btn-hero-cta {
   background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
   color: var(--primary-red-dark);
@@ -213,6 +193,28 @@ button {
   max-width: 400px;
   box-shadow: 0 8px 24px rgba(255, 215, 0, 0.4);
   border: 2px solid #FFFFFF;
+}
+
+/* WhatsApp Share Button in Hero */
+.btn-hero-share-wa {
+  background: #25D366;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  width: 100%;
+  max-width: 400px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+}
+
+.btn-hero-share-wa:hover {
+  background: #1DA851;
 }
 
 .urgency-timer-box {
@@ -266,7 +268,6 @@ button {
   color: var(--gold-accent);
 }
 
-/* Lead Capture Form Card */
 .lead-form-card {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
@@ -351,12 +352,6 @@ button {
   background: #FDFBF7;
 }
 
-.form-control:focus {
-  outline: none;
-  border-color: var(--primary-red);
-  background: #FFFFFF;
-}
-
 .btn-submit-lead {
   width: 100%;
   min-height: 50px;
@@ -368,10 +363,6 @@ button {
   font-weight: 800;
   box-shadow: 0 6px 18px rgba(168, 28, 28, 0.3);
 }
-
-/* ==========================================================================
-   Generated Voucher Card Section
-   ========================================================================== */
 
 .voucher-result-section {
   display: none;
@@ -529,12 +520,22 @@ button {
   gap: 6px;
 }
 
-/* ==========================================================================
-   ADMIN PORTAL - NATIVE APP MOBILE FIRST UI
-   ========================================================================== */
+.btn-share-result-wa {
+  background: #00E676;
+  color: #111;
+  min-height: 46px;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3);
+}
 
 .admin-body {
-  background: #F2F2F7; /* iOS Native App Grouped Table Background */
+  background: #F2F2F7;
 }
 
 .admin-app-container {
@@ -543,7 +544,6 @@ button {
   padding: 1rem 0.85rem 3rem;
 }
 
-/* Mobile Segmented Tab Control */
 .admin-segmented-control {
   display: flex;
   background: #E3E3E8;
@@ -561,10 +561,6 @@ button {
   color: var(--text-muted);
   background: transparent;
   text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
 }
 
 .segment-btn.active {
@@ -573,7 +569,6 @@ button {
   box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 
-/* Admin Stat Grid */
 .admin-stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -610,7 +605,6 @@ button {
   margin-top: 2px;
 }
 
-/* Admin Action & Verification Box */
 .admin-app-card {
   background: #FFFFFF;
   border-radius: var(--radius-md);
@@ -618,21 +612,6 @@ button {
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
   margin-bottom: 1.25rem;
-}
-
-.app-card-title {
-  font-size: 1.1rem;
-  font-weight: 800;
-  margin-bottom: 0.25rem;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.app-card-subtitle {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
 }
 
 .btn-app-scan-qr {
@@ -663,10 +642,8 @@ button {
   border-radius: var(--radius-sm);
   font-weight: 700;
   font-size: 0.9rem;
-  white-space: nowrap;
 }
 
-/* Mobile Lead Card Items (Replaces wide table on mobile) */
 .mobile-leads-list {
   display: flex;
   flex-direction: column;
@@ -707,61 +684,22 @@ button {
   border-radius: 12px;
 }
 
-.status-tag.belum {
-  background: #E3F2FD;
-  color: #1976D2;
-}
+.status-tag.belum { background: #E3F2FD; color: #1976D2; }
+.status-tag.sudah { background: #E8F5E9; color: #2E7D32; }
 
-.status-tag.sudah {
-  background: #E8F5E9;
-  color: #2E7D32;
-}
+.lead-item-body { font-size: 0.85rem; }
+.lead-customer-name { font-size: 0.95rem; font-weight: 700; color: var(--text-main); }
+.lead-item-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #F2F2F7; padding-top: 6px; margin-top: 2px; }
+.btn-app-redeem-now { background: var(--balinese-green); color: white; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; }
 
-.lead-item-body {
-  font-size: 0.85rem;
-}
-
-.lead-customer-name {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.lead-item-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid #F2F2F7;
-  padding-top: 6px;
-  margin-top: 2px;
-}
-
-.btn-app-redeem-now {
-  background: var(--balinese-green);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.desktop-only-table {
-  display: none;
-}
+.desktop-only-table { display: none; }
 
 @media (min-width: 768px) {
-  .desktop-only-table {
-    display: table;
-  }
-  .mobile-leads-list {
-    display: none;
-  }
-  .admin-stats-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+  .desktop-only-table { display: table; }
+  .mobile-leads-list { display: none; }
+  .admin-stats-grid { grid-template-columns: repeat(4, 1fr); }
 }
 
-/* Modals & Social Proof */
 .modal-backdrop, .scanner-modal-backdrop {
   display: none;
   position: fixed;
@@ -810,7 +748,6 @@ button {
   opacity: 1;
 }
 
-/* Menu Catalog Section */
 .menu-section {
   max-width: 1100px;
   margin: 2rem auto;
