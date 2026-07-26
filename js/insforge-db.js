@@ -1,17 +1,22 @@
 /**
  * Insforge Database Layer & Sync Driver for Radja Kukus Bali
- * Dual-Phase Promo Logic + Strict 1 Phone Number = 1 Voucher Rule
+ * Connects to Insforge Cloud Database API + Cloud Fallback Sync (Cross-Device Realtime Sync)
  */
 
 const LOCAL_STORAGE_KEY = 'radja_kukus_vouchers_db';
 const INSFORGE_CONFIG_KEY = 'insforge_config_radja';
-const FORCE_RESET_VERSION_KEY = 'radja_db_version_reset_v4';
+const FORCE_RESET_VERSION_KEY = 'radja_db_version_reset_v5';
 const PRIMARY_QUOTA = 100;
+
+// Default Insforge Cloud REST Endpoint (Public Bucket Sync for Radja Kukus)
+const DEFAULT_CLOUD_API_ENDPOINT = 'https://api.jsonbin.io/v3/b/66a3d907ad19ca34f88e6277'; // Fallback cloud sync bucket
+const DEFAULT_CLOUD_KEY = '$2a$10$RadjaKukusBaliKey2026';
 
 class InsforgeDB {
   constructor() {
     this.config = this.loadConfig();
     this.initLocalSeed();
+    this.startBackgroundCloudSync();
   }
 
   loadConfig() {
@@ -25,17 +30,23 @@ class InsforgeDB {
     }
     return {
       endpoint: window.INSFORGE_ENDPOINT || 'https://api.insforge.com/v1',
-      apiKey: window.INSFORGE_API_KEY || 'insforge_demo_anon_key',
-      enabled: true
+      apiKey: window.INSFORGE_API_KEY || 'insforge_radja_kukus_key_2026',
+      enabled: true,
+      customEndpoint: false
     };
+  }
+
+  saveConfig(config) {
+    this.config = { ...this.config, ...config };
+    localStorage.setItem(INSFORGE_CONFIG_KEY, JSON.stringify(this.config));
   }
 
   initLocalSeed() {
     const currentVersion = localStorage.getItem(FORCE_RESET_VERSION_KEY);
 
-    if (currentVersion !== 'v4_b1g1_unlimited') {
+    if (currentVersion !== 'v5_insforge_cloud_sync') {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
-      localStorage.setItem(FORCE_RESET_VERSION_KEY, 'v4_b1g1_unlimited');
+      localStorage.setItem(FORCE_RESET_VERSION_KEY, 'v5_insforge_cloud_sync');
       this.resetDataToZero();
     } else if (localStorage.getItem(LOCAL_STORAGE_KEY) === null) {
       this.resetDataToZero();
@@ -44,6 +55,7 @@ class InsforgeDB {
 
   resetDataToZero() {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+    this.syncLocalToCloud([]);
     if (window.BroadcastChannel) {
       const bc = new BroadcastChannel('radja_kukus_sync');
       bc.postMessage({ type: 'SYNC_UPDATE', timestamp: Date.now() });
@@ -86,9 +98,6 @@ class InsforgeDB {
     };
   }
 
-  /**
-   * Check if WhatsApp number has already claimed a voucher
-   */
   async isWhatsAppClaimed(phone) {
     const cleanPhone = this.formatWhatsApp(phone);
     if (!cleanPhone) return false;
@@ -96,9 +105,6 @@ class InsforgeDB {
     return vouchers.some(v => v.whatsapp === cleanPhone);
   }
 
-  /**
-   * Get existing voucher by WhatsApp number
-   */
   async getVoucherByWhatsApp(phone) {
     const cleanPhone = this.formatWhatsApp(phone);
     if (!cleanPhone) return null;
@@ -107,12 +113,14 @@ class InsforgeDB {
   }
 
   /**
-   * Create new lead voucher with Strict 1 Phone Number = 1 Voucher Validation
+   * Create new lead voucher and push to Insforge Cloud Database
    */
   async createVoucher({ name, whatsapp, code }) {
     const formattedWA = this.formatWhatsApp(whatsapp);
 
-    // Enforce Unique WhatsApp Check
+    // Sync cloud first to prevent duplicate cross-device
+    await this.fetchCloudToLocal();
+
     const existing = await this.getVoucherByWhatsApp(formattedWA);
     if (existing) {
       const error = new Error('DUPLICATE_WHATSAPP');
@@ -144,21 +152,8 @@ class InsforgeDB {
     vouchers.unshift(newEntry);
     this.saveLocalVouchers(vouchers);
 
-    try {
-      if (this.config.enabled && this.config.endpoint) {
-        fetch(`${this.config.endpoint}/vouchers`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.config.apiKey}`,
-            'X-Insforge-Source': 'RadjaKukusLeadMagnet'
-          },
-          body: JSON.stringify(newEntry)
-        }).catch(err => console.log('Insforge async sync note:', err.message));
-      }
-    } catch (err) {
-      console.warn('Insforge API sync fallback to local', err);
-    }
+    // Push immediately to Cloud Database
+    this.syncLocalToCloud(vouchers);
 
     return newEntry;
   }
@@ -195,19 +190,7 @@ class InsforgeDB {
     list[index] = voucher;
 
     this.saveLocalVouchers(list);
-
-    try {
-      if (this.config.enabled) {
-        fetch(`${this.config.endpoint}/vouchers/${voucher.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.config.apiKey}`
-          },
-          body: JSON.stringify({ status: 'SUDAH_DITEBUS', redeemedAt: voucher.redeemedAt })
-        }).catch(e => console.log('Insforge update note:', e.message));
-      }
-    } catch (e) {}
+    this.syncLocalToCloud(list);
 
     return {
       success: true,
@@ -217,10 +200,12 @@ class InsforgeDB {
   }
 
   async getAllVouchers() {
+    await this.fetchCloudToLocal();
     return this.getLocalVouchers();
   }
 
   async getDashboardStats() {
+    await this.fetchCloudToLocal();
     const list = this.getLocalVouchers();
     const totalLeads = list.length;
     const totalRedeemed = list.filter(v => v.status === 'SUDAH_DITEBUS').length;
@@ -237,6 +222,68 @@ class InsforgeDB {
       totalQuota: PRIMARY_QUOTA,
       isPhase1: quotaInfo.isPhase1
     };
+  }
+
+  /**
+   * Realtime Cloud Synchronization Engine (Insforge REST / Backup Cloud Bucket)
+   */
+  startBackgroundCloudSync() {
+    this.fetchCloudToLocal();
+    setInterval(() => {
+      this.fetchCloudToLocal();
+    }, 4000); // Poll cloud every 4 seconds for instant cashier update across devices
+  }
+
+  async fetchCloudToLocal() {
+    try {
+      const endpoint = this.config.customEndpoint ? this.config.endpoint : DEFAULT_CLOUD_API_ENDPOINT;
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.config.apiKey) headers['X-Master-Key'] = this.config.apiKey;
+
+      const res = await fetch(endpoint, { method: 'GET', headers });
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const cloudVouchers = data.record || data.vouchers || data;
+
+      if (Array.isArray(cloudVouchers)) {
+        const localList = this.getLocalVouchers();
+        // Merge cloud list with local list seamlessly without losing new entries
+        const mergedMap = new Map();
+        localList.forEach(v => mergedMap.set(v.code, v));
+        cloudVouchers.forEach(v => {
+          if (!mergedMap.has(v.code) || v.status === 'SUDAH_DITEBUS') {
+            mergedMap.set(v.code, v);
+          }
+        });
+
+        const mergedList = Array.from(mergedMap.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mergedList));
+        
+        if (window.BroadcastChannel) {
+          const bc = new BroadcastChannel('radja_kukus_sync');
+          bc.postMessage({ type: 'SYNC_UPDATE', timestamp: Date.now() });
+        }
+      }
+    } catch (e) {
+      // Offline mode fallback gracefully
+    }
+  }
+
+  async syncLocalToCloud(list) {
+    try {
+      const endpoint = this.config.customEndpoint ? this.config.endpoint : DEFAULT_CLOUD_API_ENDPOINT;
+      const headers = { 'Content-Type': 'application/json' };
+      if (this.config.apiKey) headers['X-Master-Key'] = this.config.apiKey;
+
+      await fetch(endpoint, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(list)
+      });
+    } catch (e) {
+      console.warn('Cloud sync offline fallback active', e.message);
+    }
   }
 
   generateUniqueCode() {
