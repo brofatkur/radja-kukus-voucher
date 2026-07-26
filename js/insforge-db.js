@@ -1,8 +1,6 @@
 /**
  * Insforge Database Layer & Sync Driver for Radja Kukus Bali
- * Dual-Phase Promo Logic:
- * - Phase 1 (First 100 Vouchers): Voucher Traktir Kukusan & Dimsum (Gratis Utama)
- * - Phase 2 (After 100 Vouchers): Voucher Promo BELI 1 GRATIS 1 (Buy 1 Get 1 Free)
+ * Dual-Phase Promo Logic + Strict 1 Phone Number = 1 Voucher Rule
  */
 
 const LOCAL_STORAGE_KEY = 'radja_kukus_vouchers_db';
@@ -71,9 +69,6 @@ class InsforgeDB {
     }
   }
 
-  /**
-   * Quota Info & Phase Detection
-   */
   getQuotaInfo() {
     const list = this.getLocalVouchers();
     const totalClaimed = list.length;
@@ -92,9 +87,39 @@ class InsforgeDB {
   }
 
   /**
-   * Create new lead voucher (Supports both Phase 1 Gratis & Phase 2 Buy 1 Get 1)
+   * Check if WhatsApp number has already claimed a voucher
+   */
+  async isWhatsAppClaimed(phone) {
+    const cleanPhone = this.formatWhatsApp(phone);
+    if (!cleanPhone) return false;
+    const vouchers = this.getLocalVouchers();
+    return vouchers.some(v => v.whatsapp === cleanPhone);
+  }
+
+  /**
+   * Get existing voucher by WhatsApp number
+   */
+  async getVoucherByWhatsApp(phone) {
+    const cleanPhone = this.formatWhatsApp(phone);
+    if (!cleanPhone) return null;
+    const vouchers = this.getLocalVouchers();
+    return vouchers.find(v => v.whatsapp === cleanPhone) || null;
+  }
+
+  /**
+   * Create new lead voucher with Strict 1 Phone Number = 1 Voucher Validation
    */
   async createVoucher({ name, whatsapp, code }) {
+    const formattedWA = this.formatWhatsApp(whatsapp);
+
+    // Enforce Unique WhatsApp Check
+    const existing = await this.getVoucherByWhatsApp(formattedWA);
+    if (existing) {
+      const error = new Error('DUPLICATE_WHATSAPP');
+      error.existingVoucher = existing;
+      throw error;
+    }
+
     const quota = this.getQuotaInfo();
 
     const discountTitle = quota.isPhase1
@@ -105,7 +130,7 @@ class InsforgeDB {
       id: 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       code: code || this.generateUniqueCode(),
       name: name.trim(),
-      whatsapp: this.formatWhatsApp(whatsapp),
+      whatsapp: formattedWA,
       createdAt: new Date().toISOString(),
       expiryDate: '2026-07-26T21:00:00+08:00',
       claimHours: '16.00 - 21.00 WITA',

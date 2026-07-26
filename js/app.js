@@ -1,8 +1,6 @@
 /**
  * Public Application Logic - Radja Kukus Bali
- * Dual-Phase Voucher Generator:
- * Phase 1 (100 Claims): Voucher Traktir Kukusan & Dimsum Gratis
- * Phase 2 (> 100 Claims): Voucher Promo BELI 1 GRATIS 1 (Buy 1 Get 1 Free)
+ * Dual-Phase Voucher Generator + Unique WhatsApp Check (1 Phone = 1 Voucher)
  */
 
 const OFFICIAL_WA_NUMBER = '6287818720333';
@@ -92,7 +90,6 @@ function updateQuotaUI() {
       }
     }
   } else {
-    // Phase 2: Buy 1 Get 1 Free Active!
     if (remainingElem) remainingElem.textContent = '0';
     if (totalElem) totalElem.textContent = '100';
     if (percentElem) percentElem.textContent = '100%';
@@ -253,8 +250,20 @@ function initLeadForm() {
       resultSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     } catch (error) {
-      console.error('Error generating voucher:', error);
-      alert('Gagal membuat voucher. Silakan coba beberapa saat lagi.');
+      if (error.message === 'DUPLICATE_WHATSAPP') {
+        const existing = error.existingVoucher;
+        alert(`⚠️ NOMOR WHATSAPP TERDAFTAR!\n\nNomor WA (${phone}) sudah pernah digunakan untuk klaim Voucher Radja Kukus Bali (Kode: ${existing.code}).\n\nKetentuan: 1 Nomor HP hanya berhak mengklaim 1 Voucher.`);
+        
+        if (existing) {
+          renderVoucherCard(existing);
+          const resultSec = document.getElementById('voucher-result-section');
+          resultSec.style.display = 'block';
+          resultSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else {
+        console.error('Error generating voucher:', error);
+        alert('Gagal membuat voucher. Silakan coba beberapa saat lagi.');
+      }
     } finally {
       btnSubmit.innerHTML = originalText;
       btnSubmit.disabled = false;
