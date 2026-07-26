@@ -1,12 +1,14 @@
 /**
  * Insforge Database Layer & Sync Driver for Radja Kukus Bali
- * Handles Realtime Dynamic Quota (100 Vouchers max), Expiry Date, & Forced Hard Reset to 0
+ * Dual-Phase Promo Logic:
+ * - Phase 1 (First 100 Vouchers): Voucher Traktir Kukusan & Dimsum (Gratis Utama)
+ * - Phase 2 (After 100 Vouchers): Voucher Promo BELI 1 GRATIS 1 (Buy 1 Get 1 Free)
  */
 
 const LOCAL_STORAGE_KEY = 'radja_kukus_vouchers_db';
 const INSFORGE_CONFIG_KEY = 'insforge_config_radja';
-const FORCE_RESET_VERSION_KEY = 'radja_db_version_reset_v3';
-const TOTAL_QUOTA = 100;
+const FORCE_RESET_VERSION_KEY = 'radja_db_version_reset_v4';
+const PRIMARY_QUOTA = 100;
 
 class InsforgeDB {
   constructor() {
@@ -30,25 +32,18 @@ class InsforgeDB {
     };
   }
 
-  /**
-   * Hard Reset to 0 Leads across all client browsers
-   */
   initLocalSeed() {
     const currentVersion = localStorage.getItem(FORCE_RESET_VERSION_KEY);
 
-    // Force wipe old 83% seed data if not yet reset on version v3
-    if (currentVersion !== 'v3_zero_leads') {
+    if (currentVersion !== 'v4_b1g1_unlimited') {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
-      localStorage.setItem(FORCE_RESET_VERSION_KEY, 'v3_zero_leads');
+      localStorage.setItem(FORCE_RESET_VERSION_KEY, 'v4_b1g1_unlimited');
       this.resetDataToZero();
     } else if (localStorage.getItem(LOCAL_STORAGE_KEY) === null) {
       this.resetDataToZero();
     }
   }
 
-  /**
-   * Reset database to 0 leads for real promotional launch
-   */
   resetDataToZero() {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
     if (window.BroadcastChannel) {
@@ -62,9 +57,7 @@ class InsforgeDB {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      // Filter out any leftover seed items if any
-      const cleaned = parsed.filter(v => !v.id || !v.id.startsWith('v_seed_'));
-      return cleaned;
+      return parsed.filter(v => !v.id || !v.id.startsWith('v_seed_'));
     } catch (e) {
       return [];
     }
@@ -79,31 +72,34 @@ class InsforgeDB {
   }
 
   /**
-   * Calculate Realtime Dynamic Quota & Percentage
+   * Quota Info & Phase Detection
    */
   getQuotaInfo() {
     const list = this.getLocalVouchers();
     const totalClaimed = list.length;
-    const remaining = Math.max(0, TOTAL_QUOTA - totalClaimed);
-    const percentageClaimed = Math.min(100, Math.round((totalClaimed / TOTAL_QUOTA) * 100));
+    const isPhase1 = totalClaimed < PRIMARY_QUOTA;
+    const remainingPhase1 = Math.max(0, PRIMARY_QUOTA - totalClaimed);
+    const percentageClaimed = Math.min(100, Math.round((totalClaimed / PRIMARY_QUOTA) * 100));
 
     return {
-      totalQuota: TOTAL_QUOTA,
+      totalQuota: PRIMARY_QUOTA,
       totalClaimed,
-      remaining,
-      percentageClaimed
+      remaining: remainingPhase1,
+      percentageClaimed,
+      isPhase1,
+      promoType: isPhase1 ? 'TRAKTIR_GRATIS' : 'BUY1_GET1_FREE'
     };
   }
 
   /**
-   * Create a new lead voucher
+   * Create new lead voucher (Supports both Phase 1 Gratis & Phase 2 Buy 1 Get 1)
    */
   async createVoucher({ name, whatsapp, code }) {
     const quota = this.getQuotaInfo();
 
-    if (quota.remaining <= 0) {
-      throw new Error('QUOTA_FULL');
-    }
+    const discountTitle = quota.isPhase1
+      ? 'Voucher Traktir Kukusan & Dimsum (Gratis Utama)'
+      : 'Voucher Promo BELI 1 GRATIS 1 (Buy 1 Get 1 Free)';
 
     const newEntry = {
       id: 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
@@ -113,7 +109,8 @@ class InsforgeDB {
       createdAt: new Date().toISOString(),
       expiryDate: '2026-07-26T21:00:00+08:00',
       claimHours: '16.00 - 21.00 WITA',
-      discount: 'Voucher Traktir Kukusan & Dimsum (Berlaku 26 Juli 2026, 16:00-21:00 WITA)',
+      discount: discountTitle,
+      isB1G1: !quota.isPhase1,
       status: 'BELUM_DITEBUS',
       redeemedAt: null
     };
@@ -212,7 +209,8 @@ class InsforgeDB {
       totalActive,
       conversionRate,
       remainingQuota: quotaInfo.remaining,
-      totalQuota: TOTAL_QUOTA
+      totalQuota: PRIMARY_QUOTA,
+      isPhase1: quotaInfo.isPhase1
     };
   }
 

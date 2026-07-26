@@ -1,6 +1,8 @@
 /**
  * Public Application Logic - Radja Kukus Bali
- * High-Conversion Lead Magnet with Native Mobile Gallery Save (Web Share API + iOS/Android Image Modal)
+ * Dual-Phase Voucher Generator:
+ * Phase 1 (100 Claims): Voucher Traktir Kukusan & Dimsum Gratis
+ * Phase 2 (> 100 Claims): Voucher Promo BELI 1 GRATIS 1 (Buy 1 Get 1 Free)
  */
 
 const OFFICIAL_WA_NUMBER = '6287818720333';
@@ -18,9 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let currentGeneratedVoucher = null;
 
-/**
- * Trigger Fireworks Celebration Animation
- */
 function launchFireworks() {
   if (typeof confetti === 'function') {
     confetti({
@@ -49,9 +48,6 @@ function launchFireworks() {
   }
 }
 
-/**
- * Hero CTA Scroll to Lead Form
- */
 function initHeroCTA() {
   const btnCTA = document.getElementById('btn-hero-cta');
   const leadFormCard = document.querySelector('.lead-form-card');
@@ -68,7 +64,7 @@ function initHeroCTA() {
 }
 
 /**
- * Realtime Quota Counter & Dynamic Percentage Calculation
+ * Realtime Quota Counter & Dual-Phase Promo UI Update
  */
 function updateQuotaUI() {
   if (!window.insforgeDB) return;
@@ -80,28 +76,35 @@ function updateQuotaUI() {
   const percentElem = document.getElementById('quota-percent-text');
   const badgeElem = document.getElementById('quota-status-text');
 
-  if (remainingElem) remainingElem.textContent = quota.remaining;
-  if (totalElem) totalElem.textContent = quota.totalQuota;
-  if (percentElem) percentElem.textContent = `${quota.percentageClaimed}%`;
+  if (quota.isPhase1) {
+    if (remainingElem) remainingElem.textContent = quota.remaining;
+    if (totalElem) totalElem.textContent = quota.totalQuota;
+    if (percentElem) percentElem.textContent = `${quota.percentageClaimed}%`;
+    if (barElem) barElem.style.width = `${quota.percentageClaimed}%`;
 
-  if (barElem) {
-    barElem.style.width = `${quota.percentageClaimed}%`;
-  }
+    if (badgeElem) {
+      if (quota.remaining <= 5) {
+        badgeElem.innerHTML = `🔥 <strong>HAMPIR HABIS!</strong> Sisa <strong>${quota.remaining}</strong> voucher traktir gratis!`;
+        badgeElem.style.color = '#FF3B30';
+      } else {
+        badgeElem.innerHTML = `⚡ <strong>${quota.percentageClaimed}% Terisi Realtime</strong> • Segera Klaim Sebelum Kehabisan!`;
+        badgeElem.style.color = '#A81C1C';
+      }
+    }
+  } else {
+    // Phase 2: Buy 1 Get 1 Free Active!
+    if (remainingElem) remainingElem.textContent = '0';
+    if (totalElem) totalElem.textContent = '100';
+    if (percentElem) percentElem.textContent = '100%';
+    if (barElem) barElem.style.width = '100%';
 
-  if (badgeElem) {
-    if (quota.remaining <= 5) {
-      badgeElem.innerHTML = `🔥 <strong>HAMPIR HABIS!</strong> Sisa <strong>${quota.remaining}</strong> voucher saja!`;
-      badgeElem.style.color = '#FF3B30';
-    } else {
-      badgeElem.innerHTML = `⚡ <strong>${quota.percentageClaimed}% Terisi Realtime</strong> • Segera Klaim Sebelum Kehabisan!`;
-      badgeElem.style.color = '#A81C1C';
+    if (badgeElem) {
+      badgeElem.innerHTML = `🎁 <strong>KUOTA TRAKTIR UTAMA HABIS!</strong> PROMO OTOMATIS BERALIH KE: <strong>BELI 1 GRATIS 1!</strong>`;
+      badgeElem.style.color = '#D4AF37';
     }
   }
 }
 
-/**
- * Countdown Timer to 26 Juli 2026 21:00 WITA
- */
 function initCountdownTimer() {
   const hoursElem = document.getElementById('timer-hours');
   const minsElem = document.getElementById('timer-minutes');
@@ -135,9 +138,6 @@ function initCountdownTimer() {
   setInterval(updateTimer, 1000);
 }
 
-/**
- * Social Proof Live Toast Notifications
- */
 function initSocialProofToasts() {
   const toastContainer = document.getElementById('social-proof-container');
   if (!toastContainer) return;
@@ -164,7 +164,7 @@ function initSocialProofToasts() {
       <div class="proof-avatar">🥟</div>
       <div class="proof-info">
         <p class="proof-text">🔥 <strong>${item.name}</strong> (${item.loc})</p>
-        <p class="proof-sub">Baru saja mengklaim Voucher Traktir Kukusan! <span class="proof-time">• ${item.time}</span></p>
+        <p class="proof-sub">Baru saja mengklaim Voucher Radja Kukus! <span class="proof-time">• ${item.time}</span></p>
       </div>
     `;
 
@@ -193,7 +193,7 @@ function triggerNewUserSocialProof(name) {
     <div class="proof-avatar">🎉</div>
     <div class="proof-info">
       <p class="proof-text">✨ <strong>${name}</strong></p>
-      <p class="proof-sub">Selamat! Voucher Traktir Anda Berhasil Dibuat!</p>
+      <p class="proof-sub">Selamat! Voucher Anda Berhasil Dibuat!</p>
     </div>
   `;
 
@@ -205,9 +205,6 @@ function triggerNewUserSocialProof(name) {
   }, 5000);
 }
 
-/**
- * Lead Form Handling & Voucher Claim Trigger
- */
 function initLeadForm() {
   const form = document.getElementById('lead-form');
   if (!form) return;
@@ -257,11 +254,7 @@ function initLeadForm() {
 
     } catch (error) {
       console.error('Error generating voucher:', error);
-      if (error.message === 'QUOTA_FULL') {
-        alert('Mohon maaf, Kuota 100 Voucher untuk promo hari ini telah HABIS sepenuhnya!');
-      } else {
-        alert('Gagal membuat voucher. Silakan coba beberapa saat lagi.');
-      }
+      alert('Gagal membuat voucher. Silakan coba beberapa saat lagi.');
     } finally {
       btnSubmit.innerHTML = originalText;
       btnSubmit.disabled = false;
@@ -273,6 +266,17 @@ function renderVoucherCard(voucher) {
   document.getElementById('v-display-name').textContent = voucher.name;
   document.getElementById('v-display-code').textContent = voucher.code;
   document.getElementById('v-display-expiry').textContent = '26 Juli 2026 (16.00 - 21.00 WITA)';
+
+  const titleElem = document.querySelector('.voucher-promo-title');
+  const celebrationTitleElem = document.querySelector('.celebration-title');
+
+  if (voucher.isB1G1) {
+    if (titleElem) titleElem.textContent = '🎁 VOUCHER PROMO BELI 1 GRATIS 1';
+    if (celebrationTitleElem) celebrationTitleElem.textContent = '🎉 SELAMAT! VOUCHER BELI 1 GRATIS 1 BERHASIL DIKLAIM! 🎉';
+  } else {
+    if (titleElem) titleElem.textContent = '🎉 Special Treat Dimsum & Kukusan (GRATIS)';
+    if (celebrationTitleElem) celebrationTitleElem.textContent = '🎉 SELAMAT! VOUCHER TRAKTIR GRATIS BERHASIL DIKLAIM! 🎉';
+  }
 
   const qrContainer = document.getElementById('voucher-qrcode');
   qrContainer.innerHTML = '';
@@ -292,12 +296,13 @@ function renderVoucherCard(voucher) {
 
   const btnWA = document.getElementById('btn-wa-claim');
   if (btnWA) {
+    const promoName = voucher.isB1G1 ? 'Voucher Beli 1 Gratis 1' : 'Voucher Traktir Gratis';
     const waText = encodeURIComponent(
-      `Halo Admin Radja Kukus Bali (087818720333), saya mau klaim Voucher Traktir Kukusan & Dimsum!\n\n` +
+      `Halo Admin Radja Kukus Bali (087818720333), saya mau klaim ${promoName}!\n\n` +
       `*Nama*: ${voucher.name}\n` +
       `*Kode Voucher*: ${voucher.code}\n` +
       `*Berlaku*: 26 Juli 2026 (Jam 16.00 - 21.00 WITA)\n\n` +
-      `Mohon konfirmasi ketersediaan meja/penukaran. Terima kasih!`
+      `Mohon konfirmasi ketersediaan penukaran. Terima kasih!`
     );
     btnWA.href = `https://wa.me/${OFFICIAL_WA_NUMBER}?text=${waText}`;
     btnWA.target = '_blank';
@@ -309,9 +314,6 @@ function renderVoucherCard(voucher) {
   }
 }
 
-/**
- * Mobile-Optimized Direct Gallery Saver (Web Share API + Image Preview Modal Fallback)
- */
 async function saveVoucherToMobileGallery(code) {
   const cardElem = document.getElementById('voucher-printable-card');
   if (!cardElem) return;
@@ -328,14 +330,13 @@ async function saveVoucherToMobileGallery(code) {
 
   try {
     const canvas = await html2canvas(cardElem, {
-      scale: 3, // Ultra high res for clear QR Code
+      scale: 3,
       useCORS: true,
       backgroundColor: '#7A1212'
     });
 
     const fileName = `Voucher_Radja_Kukus_${code}.png`;
 
-    // 1. Try Native Web Share API (Triggers native iOS / Android share sheet -> Save to Photos / Gallery)
     canvas.toBlob(async (blob) => {
       if (!blob) {
         fallbackImageDownload(canvas, fileName);
@@ -349,7 +350,7 @@ async function saveVoucherToMobileGallery(code) {
         try {
           await navigator.share({
             title: 'Voucher Radja Kukus Bali',
-            text: 'Voucher Traktir Kukusan & Dimsum Radja Kukus Bali',
+            text: 'Voucher Promo Radja Kukus Bali',
             files: [file]
           });
           btnDownload.innerHTML = '✅ Berhasil Tersimpan!';
@@ -360,10 +361,7 @@ async function saveVoucherToMobileGallery(code) {
         }
       }
 
-      // 2. Standard Download Link trigger
       fallbackImageDownload(canvas, fileName);
-      
-      // 3. Open Mobile Image Modal for long-press "Save Image to Photos"
       openGalleryImageModal(canvas.toDataURL('image/png'), fileName);
 
       btnDownload.innerHTML = '✅ Gambar Siap Disimpan!';
@@ -392,9 +390,6 @@ function fallbackImageDownload(canvas, fileName) {
   document.body.removeChild(link);
 }
 
-/**
- * Mobile Image Modal with long-press "Save Image to Photos / Galeri" instructions
- */
 function initImageGalleryModal() {
   const modal = document.getElementById('image-gallery-modal');
   const btnClose = document.getElementById('btn-close-img-modal');
