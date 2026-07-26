@@ -1,6 +1,6 @@
 /**
  * Public Application Logic - Radja Kukus Bali
- * High-Conversion Lead Magnet with Fireworks Celebration, Canvas PNG Exporter, & Screenshot Cashier Guide
+ * High-Conversion Lead Magnet with Native Mobile Gallery Save (Web Share API + iOS/Android Image Modal)
  */
 
 const OFFICIAL_WA_NUMBER = '6287818720333';
@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateQuotaUI();
   initCountdownTimer();
   initSocialProofToasts();
+  initImageGalleryModal();
 });
 
 let currentGeneratedVoucher = null;
@@ -22,7 +23,6 @@ let currentGeneratedVoucher = null;
  */
 function launchFireworks() {
   if (typeof confetti === 'function') {
-    // Left & Right Fireworks Launch
     confetti({
       particleCount: 100,
       spread: 70,
@@ -244,13 +244,9 @@ function initLeadForm() {
 
       currentGeneratedVoucher = voucher;
 
-      // Update dynamic percentage and quota count
       updateQuotaUI();
-
       renderVoucherCard(voucher);
       triggerNewUserSocialProof(name);
-
-      // Launch fireworks animation celebration!
       launchFireworks();
 
       form.reset();
@@ -309,14 +305,14 @@ function renderVoucherCard(voucher) {
 
   const btnDownload = document.getElementById('btn-download-voucher');
   if (btnDownload) {
-    btnDownload.onclick = () => downloadVoucherImage(voucher.code);
+    btnDownload.onclick = () => saveVoucherToMobileGallery(voucher.code);
   }
 }
 
 /**
- * Robust PNG Download with DataURL/Blob Fallback for Mobile Browsers
+ * Mobile-Optimized Direct Gallery Saver (Web Share API + Image Preview Modal Fallback)
  */
-function downloadVoucherImage(code) {
+async function saveVoucherToMobileGallery(code) {
   const cardElem = document.getElementById('voucher-printable-card');
   if (!cardElem) return;
 
@@ -330,35 +326,100 @@ function downloadVoucherImage(code) {
   btnDownload.innerHTML = '⏳ Menyiapkan Gambar...';
   btnDownload.disabled = true;
 
-  html2canvas(cardElem, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: '#7A1212'
-  }).then((canvas) => {
-    try {
-      const imageURI = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `Voucher_Radja_Kukus_${code}.png`;
-      link.href = imageURI;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  try {
+    const canvas = await html2canvas(cardElem, {
+      scale: 3, // Ultra high res for clear QR Code
+      useCORS: true,
+      backgroundColor: '#7A1212'
+    });
 
-      btnDownload.innerHTML = '✅ Gambar Berhasil Diunduh!';
-    } catch (e) {
-      alert('TIPS: Jika otomatis unduh tidak berjalan di HP Anda, silakan LAKUKAN SCREENSHOT kartu voucher ini dan tunjukkan ke kasir!');
-    }
+    const fileName = `Voucher_Radja_Kukus_${code}.png`;
 
-    setTimeout(() => {
-      btnDownload.innerHTML = origBtnText;
-      btnDownload.disabled = false;
-    }, 2500);
-  }).catch((err) => {
-    console.error('Error generating canvas PNG:', err);
+    // 1. Try Native Web Share API (Triggers native iOS / Android share sheet -> Save to Photos / Gallery)
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        fallbackImageDownload(canvas, fileName);
+        resetBtn();
+        return;
+      }
+
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: 'Voucher Radja Kukus Bali',
+            text: 'Voucher Traktir Kukusan & Dimsum Radja Kukus Bali',
+            files: [file]
+          });
+          btnDownload.innerHTML = '✅ Berhasil Tersimpan!';
+          setTimeout(resetBtn, 2500);
+          return;
+        } catch (shareErr) {
+          console.log('Share canceled or failed, running fallback', shareErr);
+        }
+      }
+
+      // 2. Standard Download Link trigger
+      fallbackImageDownload(canvas, fileName);
+      
+      // 3. Open Mobile Image Modal for long-press "Save Image to Photos"
+      openGalleryImageModal(canvas.toDataURL('image/png'), fileName);
+
+      btnDownload.innerHTML = '✅ Gambar Siap Disimpan!';
+      setTimeout(resetBtn, 2500);
+    }, 'image/png');
+
+  } catch (err) {
+    console.error('Error rendering canvas image:', err);
     alert('TIPS: Silakan lakukan SCREENSHOT layar kartu voucher ini dan tunjukkan ke kasir outlet Radja Kukus Bali.');
+    resetBtn();
+  }
+
+  function resetBtn() {
     btnDownload.innerHTML = origBtnText;
     btnDownload.disabled = false;
-  });
+  }
+}
+
+function fallbackImageDownload(canvas, fileName) {
+  const imageURI = canvas.toDataURL('image/png');
+  const link = document.createElement('a');
+  link.download = fileName;
+  link.href = imageURI;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
+ * Mobile Image Modal with long-press "Save Image to Photos / Galeri" instructions
+ */
+function initImageGalleryModal() {
+  const modal = document.getElementById('image-gallery-modal');
+  const btnClose = document.getElementById('btn-close-img-modal');
+
+  if (btnClose && modal) {
+    btnClose.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+  }
+}
+
+function openGalleryImageModal(dataUrl, fileName) {
+  const modal = document.getElementById('image-gallery-modal');
+  const imgElem = document.getElementById('modal-voucher-img');
+  const btnDownloadDirect = document.getElementById('btn-modal-download-direct');
+
+  if (modal && imgElem) {
+    imgElem.src = dataUrl;
+    modal.style.display = 'flex';
+
+    if (btnDownloadDirect) {
+      btnDownloadDirect.href = dataUrl;
+      btnDownloadDirect.download = fileName;
+    }
+  }
 }
 
 function renderMenuCatalog(categoryFilter = 'all') {
