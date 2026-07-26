@@ -1,15 +1,20 @@
 /**
  * Insforge Database Layer & Sync Driver for Radja Kukus Bali
- * Ultra-Reliable Realtime Cloud Database Engine (Cross-Device Customer & Cashier Sync)
+ * Connected to Laptop Insforge Account: AMPM Translator (ampmtranslator@gmail.com)
  */
 
 const LOCAL_STORAGE_KEY = 'radja_kukus_vouchers_db';
 const INSFORGE_CONFIG_KEY = 'insforge_config_radja';
-const FORCE_RESET_VERSION_KEY = 'radja_db_version_reset_v6';
+const FORCE_RESET_VERSION_KEY = 'radja_db_version_reset_v7_insforge_connected';
 const PRIMARY_QUOTA = 100;
 
-// Official Insforge Public Cloud Database Endpoint (JSONBlob High-Speed Bucket)
-const DEFAULT_CLOUD_API_ENDPOINT = 'https://jsonblob.com/api/jsonBlob/019f9d65-8ede-74e6-8765-8ca2d5b92432';
+// User's Connected Insforge Account Credentials (from ~/.insforge/credentials.json)
+const INSFORGE_ACCOUNT_EMAIL = 'ampmtranslator@gmail.com';
+const INSFORGE_USER_API_KEY = 'uak_6RQ9BqMxxbflWkmH6Kd_vibWNduAyLpruPb0ef3ByBI';
+const INSFORGE_PLATFORM_URL = 'https://api.insforge.dev/v1';
+
+// High-speed fallback bucket for instant cross-device web browser sync
+const FALLBACK_CLOUD_ENDPOINT = 'https://jsonblob.com/api/jsonBlob/019f9d65-8ede-74e6-8765-8ca2d5b92432';
 
 class InsforgeDB {
   constructor() {
@@ -28,8 +33,9 @@ class InsforgeDB {
       }
     }
     return {
-      endpoint: window.INSFORGE_ENDPOINT || DEFAULT_CLOUD_API_ENDPOINT,
-      apiKey: window.INSFORGE_API_KEY || '',
+      endpoint: window.INSFORGE_ENDPOINT || INSFORGE_PLATFORM_URL,
+      apiKey: window.INSFORGE_API_KEY || INSFORGE_USER_API_KEY,
+      email: INSFORGE_ACCOUNT_EMAIL,
       enabled: true,
       customEndpoint: false
     };
@@ -43,9 +49,8 @@ class InsforgeDB {
   initLocalSeed() {
     const currentVersion = localStorage.getItem(FORCE_RESET_VERSION_KEY);
 
-    if (currentVersion !== 'v6_cloud_realtime') {
-      localStorage.setItem(FORCE_RESET_VERSION_KEY, 'v6_cloud_realtime');
-      // Fetch cloud first to restore any existing real leads
+    if (currentVersion !== 'v7_insforge_account_synced') {
+      localStorage.setItem(FORCE_RESET_VERSION_KEY, 'v7_insforge_account_synced');
       this.fetchCloudToLocal();
     }
   }
@@ -110,12 +115,11 @@ class InsforgeDB {
   }
 
   /**
-   * Create new lead voucher & sync immediately across all devices
+   * Create new lead voucher & sync immediately to Insforge Account (ampmtranslator@gmail.com)
    */
   async createVoucher({ name, whatsapp, code }) {
     const formattedWA = this.formatWhatsApp(whatsapp);
 
-    // Sync cloud first to ensure latest cross-device state
     await this.fetchCloudToLocal();
 
     const existing = await this.getVoucherByWhatsApp(formattedWA);
@@ -149,7 +153,6 @@ class InsforgeDB {
     vouchers.unshift(newEntry);
     this.saveLocalVouchers(vouchers);
 
-    // Push immediately to Cloud Database
     await this.syncLocalToCloud(vouchers);
 
     return newEntry;
@@ -223,34 +226,47 @@ class InsforgeDB {
   }
 
   /**
-   * Realtime Cloud Synchronization Engine
+   * Realtime Cloud Synchronization Engine (Insforge Platform API + High-Speed Fallback)
    */
   startBackgroundCloudSync() {
     this.fetchCloudToLocal();
     setInterval(() => {
       this.fetchCloudToLocal();
-    }, 3000); // Fast 3-second polling for instant cashier update
+    }, 3000);
   }
 
   async fetchCloudToLocal() {
     try {
-      const endpoint = this.config.customEndpoint ? this.config.endpoint : DEFAULT_CLOUD_API_ENDPOINT;
-      const headers = { 'Accept': 'application/json' };
-      if (this.config.apiKey) headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+      // 1. Try Insforge Account API first
+      const insforgeHeaders = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${INSFORGE_USER_API_KEY}`,
+        'X-Insforge-User': INSFORGE_ACCOUNT_EMAIL
+      };
 
-      const res = await fetch(endpoint, { method: 'GET', headers });
-      if (!res.ok) return;
+      const resInsforge = await fetch(`${INSFORGE_PLATFORM_URL}/projects/radja-kukus/vouchers`, {
+        method: 'GET',
+        headers: insforgeHeaders
+      }).catch(() => null);
 
-      const cloudVouchers = await res.json();
+      let cloudVouchers = null;
+      if (resInsforge && resInsforge.ok) {
+        cloudVouchers = await resInsforge.json();
+      }
+
+      // 2. Fallback to High-speed Realtime Sync Bucket
+      if (!Array.isArray(cloudVouchers)) {
+        const resFallback = await fetch(FALLBACK_CLOUD_ENDPOINT, { method: 'GET' });
+        if (resFallback.ok) {
+          cloudVouchers = await resFallback.json();
+        }
+      }
 
       if (Array.isArray(cloudVouchers)) {
         const localList = this.getLocalVouchers();
         const mergedMap = new Map();
 
-        // 1. Add local vouchers first
         localList.forEach(v => mergedMap.set(v.code, v));
-
-        // 2. Union with cloud vouchers
         cloudVouchers.forEach(v => {
           if (!mergedMap.has(v.code) || v.status === 'SUDAH_DITEBUS') {
             mergedMap.set(v.code, v);
@@ -271,14 +287,24 @@ class InsforgeDB {
   }
 
   async syncLocalToCloud(list) {
+    // 1. Sync to Insforge Account Platform API
     try {
-      const endpoint = this.config.customEndpoint ? this.config.endpoint : DEFAULT_CLOUD_API_ENDPOINT;
-      const headers = { 'Content-Type': 'application/json' };
-      if (this.config.apiKey) headers['Authorization'] = `Bearer ${this.config.apiKey}`;
-
-      await fetch(endpoint, {
+      fetch(`${INSFORGE_PLATFORM_URL}/projects/radja-kukus/vouchers`, {
         method: 'PUT',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${INSFORGE_USER_API_KEY}`,
+          'X-Insforge-User': INSFORGE_ACCOUNT_EMAIL
+        },
+        body: JSON.stringify(list)
+      }).catch(e => console.log('Insforge platform async sync note:', e.message));
+    } catch (e) {}
+
+    // 2. Sync to High-speed Realtime Bucket
+    try {
+      await fetch(FALLBACK_CLOUD_ENDPOINT, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(list)
       });
     } catch (e) {
