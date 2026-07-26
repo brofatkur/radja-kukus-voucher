@@ -2,10 +2,10 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Portal - Verifikasi & Scanner Voucher Radja Kukus Bali</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kasir Outlet - Scanner & Verifikasi Radja Kukus Bali</title>
 
-  <!-- CSS Design System -->
+  <!-- Mobile App CSS -->
   <link rel="stylesheet" href="css/style.css">
 
   <!-- Camera QR Code Scanner Library (Html5Qrcode) -->
@@ -15,126 +15,141 @@
 
   <!-- Top Announcement Bar -->
   <div class="top-announcement-bar">
-    <span>🔒 PORTAL KASIR & ADMIN • OFFICIAL WA OUTLET: <strong>0878-1872-0333</strong></span>
+    <span>🔒 PORTAL KASIR OUTLET • OFFICIAL WA: <strong>0878-1872-0333</strong></span>
   </div>
 
-  <!-- Admin Navigation Header -->
+  <!-- Mobile Native App Header -->
   <header class="admin-header">
     <div class="header-container">
       <div class="brand-logo-group">
         <img src="assets/logo.png" alt="Radja Kukus Bali" class="brand-logo-img">
         <div class="brand-titles">
-          <span class="brand-name">Portal Admin Outlet</span>
-          <span class="brand-tagline">Radja Kukus Bali - Scanner & Verifikasi</span>
+          <span class="brand-name">Kasir Outlet</span>
+          <span class="brand-tagline">Radja Kukus Bali • System Online 🟢</span>
         </div>
       </div>
       <div>
-        <a href="index.html" class="btn-admin-nav">
-          🌐 Ke Halaman Publik
+        <a href="index.html" class="btn-wa-header" style="background: rgba(255,255,255,0.2);">
+          🌐 Public Site
         </a>
       </div>
     </div>
   </header>
 
-  <main class="admin-container">
+  <main class="admin-app-container">
 
     <!-- Login PIN Card -->
-    <div id="admin-auth-card" class="lead-form-card" style="margin: 3rem auto; text-align: center;">
-      <h2 class="form-header-title">🔐 Akses Kasir & Admin</h2>
-      <p class="form-header-subtitle">Masukkan PIN Kasir untuk mengakses scanner & data lead</p>
+    <div id="admin-auth-card" class="lead-form-card" style="margin: 2rem auto; text-align: center;">
+      <h2 class="form-header-title">🔐 Login Kasir Outlet</h2>
+      <p class="form-header-subtitle">Masukkan PIN Kasir untuk mengaktifkan scanner & data voucher</p>
 
-      <div class="form-group" style="margin-top: 1.5rem;">
+      <div class="form-group" style="margin-top: 1.25rem;">
         <input type="password" id="admin-pin-input" class="form-control" placeholder="Masukkan PIN (Default: 1234)" style="text-align: center; font-size: 1.3rem; letter-spacing: 4px;">
       </div>
 
       <button id="btn-admin-login" class="btn-submit-lead">
-        🔓 Masuk Ke Dashboard
+        🔓 Buka Dashboard Kasir
       </button>
-      <p style="font-size:0.75rem; color:#888; margin-top:12px;">*PIN default demo: <strong>1234</strong></p>
+      <p style="font-size:0.75rem; color:#888; margin-top:10px;">*PIN default demo: <strong>1234</strong></p>
     </div>
 
-    <!-- Main Admin Dashboard (Hidden until PIN authenticated) -->
+    <!-- Main Mobile Dashboard -->
     <div id="admin-main-content" style="display: none;">
 
-      <!-- Summary Statistics Grid -->
-      <div class="admin-stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Total Lead Masuk</div>
-          <div class="stat-value" id="stat-total-leads">0</div>
-        </div>
+      <!-- Segmented Tab Control (Mobile App View Switcher) -->
+      <div class="admin-segmented-control">
+        <button id="tab-btn-scanner" class="segment-btn active" onclick="switchAdminTab('scanner')">
+          📷 Scanner & Verifikasi
+        </button>
+        <button id="tab-btn-leads" class="segment-btn" onclick="switchAdminTab('leads')">
+          📊 Data Lead & Rekap
+        </button>
+      </div>
 
-        <div class="stat-card green">
-          <div class="stat-label">Voucher Ditebus</div>
-          <div class="stat-value" id="stat-total-redeemed">0</div>
-        </div>
+      <!-- TAB 1: SCANNER & VERIFIKASI -->
+      <div id="tab-content-scanner">
+        <div class="admin-app-card">
+          <div class="app-card-title">📷 QR Scanner & Verifikasi</div>
+          <p class="app-card-subtitle">Promo 26 Juli 2026 (16:00 - 21:00 WITA) • Scan QR dari HP pelanggan atau ketik manual</p>
 
-        <div class="stat-card gold">
-          <div class="stat-label">Sisa Kuota Voucher</div>
-          <div class="stat-value" id="stat-total-active">0</div>
-        </div>
+          <button id="btn-open-scanner" class="btn-app-scan-qr">
+            📷 Buka Kamera QR Code Scanner
+          </button>
 
-        <div class="stat-card blue">
-          <div class="stat-label">Redemption Rate</div>
-          <div class="stat-value" id="stat-conversion-rate">0%</div>
+          <div class="verify-input-flex">
+            <input type="text" id="input-verify-code" class="form-control" placeholder="Ketik Kode (e.g. RK-BALI-88X92)" style="text-transform: uppercase;">
+            <button id="btn-search-verify" class="btn-app-verify">
+              Verifikasi
+            </button>
+          </div>
+
+          <!-- Verification Result Box -->
+          <div id="redeem-result-box" class="redeem-result-card" style="margin-top: 1rem;"></div>
         </div>
       </div>
 
-      <!-- Verification & Scanner Box -->
-      <div id="admin-verify-container" class="admin-verify-box">
-        <div class="verify-box-header">
-          <div>
-            <h2>🔍 Verifikasi Voucher Pelanggan</h2>
-            <p style="font-size:0.85rem; color:#666;">Promo 26 Juli 2026 (Jam 16.00 - 21.00 WITA) • Scan QR dari HP/Gambar atau ketik kode manual</p>
+      <!-- TAB 2: DATA LEAD & REKAP -->
+      <div id="tab-content-leads" style="display: none;">
+        
+        <!-- Summary Stats Grid (Mobile 2x2) -->
+        <div class="admin-stats-grid">
+          <div class="stat-card-app red">
+            <span class="stat-app-label">Total Lead</span>
+            <span class="stat-app-value" id="stat-total-leads">0</span>
           </div>
-          <button id="btn-open-scanner" class="btn-scan-qr">
-            📷 Scan QR Code Kamera
-          </button>
+          <div class="stat-card-app green">
+            <span class="stat-app-label">Voucher Ditebus</span>
+            <span class="stat-app-value" id="stat-total-redeemed">0</span>
+          </div>
+          <div class="stat-card-app gold">
+            <span class="stat-app-label">Sisa Kuota</span>
+            <span class="stat-app-value" id="stat-total-active">0</span>
+          </div>
+          <div class="stat-card-app blue">
+            <span class="stat-app-label">Konversi Rate</span>
+            <span class="stat-app-value" id="stat-conversion-rate">0%</span>
+          </div>
         </div>
 
-        <div class="verify-input-group">
-          <input type="text" id="input-verify-code" class="form-control" placeholder="Contoh: RK-BALI-88X92" style="font-size: 1.1rem; text-transform: uppercase;">
-          <button id="btn-search-verify" class="btn-scan-qr" style="background: var(--balinese-green);">
-            Verifikasi Kode
-          </button>
-        </div>
-
-        <!-- Verification Result Card -->
-        <div id="redeem-result-box" class="redeem-result-card"></div>
-      </div>
-
-      <!-- Lead Database Table Card -->
-      <div class="admin-table-card">
-        <div class="table-header-bar">
-          <div>
-            <h3>📊 Data Lead & Riwayat Voucher</h3>
-            <p style="font-size:0.8rem; color:#666;">Terkoneksi real-time dengan Database Insforge (Max Kuota: 100)</p>
-          </div>
-
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="table-search-input" class="form-control" placeholder="Cari Nama / Kode / WA..." style="padding: 8px 14px; font-size: 0.85rem; width: 220px;">
-            <button id="btn-export-csv" class="btn-export-csv">
+        <!-- Lead List Card -->
+        <div class="admin-app-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
+            <div class="app-card-title">📊 Riwayat Customer</div>
+            <button id="btn-export-csv" class="btn-export-csv" style="padding: 6px 12px; font-size: 0.78rem;">
               📥 Export CSV
             </button>
           </div>
+
+          <div style="margin-bottom: 1rem;">
+            <input type="text" id="table-search-input" class="form-control" placeholder="🔍 Cari Nama / Kode / WA..." style="min-height: 40px; font-size: 0.85rem;">
+          </div>
+
+          <!-- Mobile App Data Cards List View -->
+          <div id="mobile-leads-container" class="mobile-leads-list">
+            <!-- Dynamically populated by admin.js -->
+          </div>
+
+          <!-- Desktop Table Fallback -->
+          <div class="table-responsive">
+            <table class="leads-table desktop-only-table">
+              <thead>
+                <tr>
+                  <th>Kode Voucher</th>
+                  <th>Nama Pelanggan</th>
+                  <th>No. WhatsApp</th>
+                  <th>Tanggal Klaim</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-leads-table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
         </div>
 
-        <div class="table-responsive">
-          <table class="leads-table">
-            <thead>
-              <tr>
-                <th>Kode Voucher</th>
-                <th>Nama Pelanggan</th>
-                <th>No. WhatsApp</th>
-                <th>Tanggal Klaim</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="admin-leads-table-body">
-              <!-- Dynamically populated by admin.js -->
-            </tbody>
-          </table>
-        </div>
       </div>
 
     </div>
@@ -145,11 +160,11 @@
   <div id="scanner-modal" class="scanner-modal-backdrop">
     <div class="scanner-modal-content">
       <h3>📷 Arahkan Kamera Ke QR Code Voucher</h3>
-      <p style="font-size:0.8rem; color:#666; margin-bottom: 0.5rem;">Sistem akan otomatis membaca nomor voucher</p>
+      <p style="font-size:0.78rem; color:#666; margin-bottom: 0.5rem;">Arahkan ke QR Code di layar HP atau cetakan voucher pelanggan</p>
 
       <div id="qr-reader-container"></div>
 
-      <button id="btn-close-scanner" class="btn-close-scanner" style="margin-top: 1rem;">
+      <button id="btn-close-scanner" class="btn-submit-lead" style="background: #E0E0E0; color: #111; min-height: 44px; margin-top: 1rem;">
         ✕ Tutup Kamera
       </button>
     </div>

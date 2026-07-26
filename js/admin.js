@@ -1,6 +1,6 @@
 /**
  * Admin Portal Application Logic - Radja Kukus Bali
- * Handles Admin Security, Camera QR Code Scanning, Voucher Redemption, & Lead Dashboard
+ * Mobile First App UI Driver with Camera QR Code Scanning & Mobile Data Cards List
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,12 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
 let html5QrCodeScanner = null;
 
 function initAdminAuth() {
-  const adminSection = document.getElementById('admin-main-content');
-  const authCard = document.getElementById('admin-auth-card');
   const pinInput = document.getElementById('admin-pin-input');
   const btnLogin = document.getElementById('btn-admin-login');
 
-  // Check session storage
   if (sessionStorage.getItem('radja_admin_logged_in') === 'true') {
     showAdminDashboard();
     return;
@@ -55,6 +52,29 @@ function showAdminDashboard() {
 }
 
 /**
+ * Mobile App Segmented Tab Switcher
+ */
+window.switchAdminTab = function(tabName) {
+  const btnScanner = document.getElementById('tab-btn-scanner');
+  const btnLeads = document.getElementById('tab-btn-leads');
+  const contentScanner = document.getElementById('tab-content-scanner');
+  const contentLeads = document.getElementById('tab-content-leads');
+
+  if (tabName === 'scanner') {
+    btnScanner.classList.add('active');
+    btnLeads.classList.remove('active');
+    contentScanner.style.display = 'block';
+    contentLeads.style.display = 'none';
+  } else {
+    btnLeads.classList.add('active');
+    btnScanner.classList.remove('active');
+    contentLeads.style.display = 'block';
+    contentScanner.style.display = 'none';
+    loadLeadsTable();
+  }
+};
+
+/**
  * Load stats for summary cards
  */
 async function loadDashboardStats() {
@@ -63,19 +83,21 @@ async function loadDashboardStats() {
 
   document.getElementById('stat-total-leads').textContent = stats.totalLeads;
   document.getElementById('stat-total-redeemed').textContent = stats.totalRedeemed;
-  document.getElementById('stat-total-active').textContent = stats.totalActive;
+  document.getElementById('stat-total-active').textContent = stats.remainingQuota;
   document.getElementById('stat-conversion-rate').textContent = `${stats.conversionRate}%`;
 }
 
 /**
- * Load all leads into Admin Table
+ * Load all leads into Mobile App Cards & Desktop Table
  */
 async function loadLeadsTable(searchTerm = '') {
+  const mobileContainer = document.getElementById('mobile-leads-container');
   const tbody = document.getElementById('admin-leads-table-body');
-  if (!tbody || !window.insforgeDB) return;
+  if (!window.insforgeDB) return;
 
   const vouchers = await window.insforgeDB.getAllVouchers();
-  tbody.innerHTML = '';
+  if (mobileContainer) mobileContainer.innerHTML = '';
+  if (tbody) tbody.innerHTML = '';
 
   const filtered = vouchers.filter(v => {
     if (!searchTerm) return true;
@@ -86,45 +108,67 @@ async function loadLeadsTable(searchTerm = '') {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#888;">Tidak ada data lead ditemukan.</td></tr>`;
+    const emptyHtml = `<div style="text-align:center; padding:2rem; color:#888;">Tidak ada data lead ditemukan.</div>`;
+    if (mobileContainer) mobileContainer.innerHTML = emptyHtml;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6">${emptyHtml}</td></tr>`;
     return;
   }
 
   filtered.forEach(item => {
-    const tr = document.createElement('tr');
-
     const createdStr = new Date(item.createdAt).toLocaleDateString('id-ID', {
-      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
     });
 
     const isRedeemed = item.status === 'SUDAH_DITEBUS';
     const statusBadge = isRedeemed
-      ? `<span class="status-badge sudah">✓ SUDAH DITEBUS</span>`
-      : `<span class="status-badge belum">⏱ BELUM DITEBUS</span>`;
+      ? `<span class="status-tag sudah">✓ SUDAH DITEBUS</span>`
+      : `<span class="status-tag belum">⏱ BELUM DITEBUS</span>`;
 
     const waLink = `https://wa.me/${item.whatsapp}?text=${encodeURIComponent('Halo ' + item.name + ', salam hangat dari Radja Kukus Bali!')}`;
 
-    tr.innerHTML = `
-      <td><strong>${item.code}</strong></td>
-      <td>${item.name}</td>
-      <td>
-        <a href="${waLink}" target="_blank" style="color:#25D366; font-weight:600;">
-          💬 ${item.whatsapp}
-        </a>
-      </td>
-      <td>${createdStr}</td>
-      <td>${statusBadge}</td>
-      <td>
-        ${!isRedeemed ? `<button onclick="quickRedeemCode('${item.code}')" style="background:#1E4D2B; color:white; padding:4px 10px; border-radius:6px; font-weight:600; font-size:0.8rem;">Tebus Now</button>` : `<span style="font-size:0.8rem; color:#888;">${new Date(item.redeemedAt).toLocaleDateString('id-ID')}</span>`}
-      </td>
-    `;
-    tbody.appendChild(tr);
+    // 1. Mobile App Card View
+    if (mobileContainer) {
+      const card = document.createElement('div');
+      card.className = 'lead-item-card';
+      card.innerHTML = `
+        <div class="lead-item-header">
+          <span class="lead-code-badge">${item.code}</span>
+          ${statusBadge}
+        </div>
+        <div class="lead-item-body">
+          <div class="lead-customer-name">👤 ${item.name}</div>
+          <div style="margin-top:4px; font-size:0.8rem; color:#666;">
+            📅 ${createdStr}
+          </div>
+        </div>
+        <div class="lead-item-footer">
+          <a href="${waLink}" target="_blank" style="color:#25D366; font-weight:700; font-size:0.82rem;">
+            💬 ${item.whatsapp}
+          </a>
+          ${!isRedeemed ? `<button onclick="quickRedeemCode('${item.code}')" class="btn-app-redeem-now">Tebus Now</button>` : `<span style="font-size:0.75rem; color:#888;">${new Date(item.redeemedAt).toLocaleDateString('id-ID')}</span>`}
+        </div>
+      `;
+      mobileContainer.appendChild(card);
+    }
+
+    // 2. Desktop Table Fallback
+    if (tbody) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${item.code}</strong></td>
+        <td>${item.name}</td>
+        <td><a href="${waLink}" target="_blank" style="color:#25D366; font-weight:600;">💬 ${item.whatsapp}</a></td>
+        <td>${createdStr}</td>
+        <td>${statusBadge}</td>
+        <td>
+          ${!isRedeemed ? `<button onclick="quickRedeemCode('${item.code}')" class="btn-app-redeem-now">Tebus Now</button>` : `<span style="font-size:0.8rem; color:#888;">${new Date(item.redeemedAt).toLocaleDateString('id-ID')}</span>`}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
   });
 }
 
-/**
- * Manual Voucher Search & Verification
- */
 function initSearchAndRedeem() {
   const inputCode = document.getElementById('input-verify-code');
   const btnVerify = document.getElementById('btn-search-verify');
@@ -140,7 +184,6 @@ function initSearchAndRedeem() {
     verifyVoucherCode(code);
   });
 
-  // Table search bar
   const tableSearch = document.getElementById('table-search-input');
   if (tableSearch) {
     tableSearch.addEventListener('input', (e) => {
@@ -158,8 +201,8 @@ async function verifyVoucherCode(code) {
   if (!voucher) {
     resultBox.className = 'redeem-result-card already';
     resultBox.innerHTML = `
-      <h3 style="color:#D32F2F;">❌ Kode Voucher Tidak Valid!</h3>
-      <p>Kode <strong>${code}</strong> tidak terdaftar dalam sistem Radja Kukus Bali.</p>
+      <h3 style="color:#D32F2F; font-size:1.05rem;">❌ Kode Voucher Tidak Valid!</h3>
+      <p style="font-size:0.85rem; margin-top:4px;">Kode <strong>${code}</strong> tidak terdaftar dalam sistem.</p>
     `;
     return;
   }
@@ -169,31 +212,31 @@ async function verifyVoucherCode(code) {
   if (isRedeemed) {
     resultBox.className = 'redeem-result-card already';
     resultBox.innerHTML = `
-      <h3 style="color:#D32F2F;">⚠️ Voucher Sudah Pernah Ditebus!</h3>
-      <p><strong>Nama Pelanggan:</strong> ${voucher.name} (${voucher.whatsapp})</p>
-      <p><strong>Kode:</strong> ${voucher.code}</p>
-      <p><strong>Waktu Ditebus:</strong> ${new Date(voucher.redeemedAt).toLocaleString('id-ID')}</p>
+      <h3 style="color:#D32F2F; font-size:1.05rem;">⚠️ Voucher Sudah Pernah Ditebus!</h3>
+      <p style="font-size:0.85rem; margin-top:6px;"><strong>Nama:</strong> ${voucher.name} (${voucher.whatsapp})</p>
+      <p style="font-size:0.85rem;"><strong>Kode:</strong> ${voucher.code}</p>
+      <p style="font-size:0.85rem;"><strong>Waktu Ditebus:</strong> ${new Date(voucher.redeemedAt).toLocaleString('id-ID')}</p>
     `;
   } else {
     resultBox.className = 'redeem-result-card success';
     resultBox.innerHTML = `
-      <h3 style="color:#2E7D32;">✅ Voucher Valid (Siap Ditebus)</h3>
-      <p style="margin-top:8px;"><strong>Nama Pelanggan:</strong> ${voucher.name}</p>
-      <p><strong>No. WhatsApp:</strong> ${voucher.whatsapp}</p>
-      <p><strong>Kode Unik:</strong> <span style="font-family:monospace; font-size:1.1rem; font-weight:bold;">${voucher.code}</span></p>
-      <p><strong>Promo:</strong> ${voucher.discount}</p>
-      <button onclick="confirmRedeem('${voucher.code}')" style="margin-top:12px; background:#1E4D2B; color:white; padding:10px 20px; border-radius:8px; font-weight:700; font-size:1rem; width:100%;">
-        🎉 Konfirmasi Penukaran Voucher Sekarang
+      <h3 style="color:#2E7D32; font-size:1.05rem;">✅ Voucher Valid (Siap Ditebus)</h3>
+      <p style="font-size:0.85rem; margin-top:6px;"><strong>Nama:</strong> ${voucher.name}</p>
+      <p style="font-size:0.85rem;"><strong>No. WA:</strong> ${voucher.whatsapp}</p>
+      <p style="font-size:0.85rem;"><strong>Kode:</strong> <span style="font-family:monospace; font-weight:bold;">${voucher.code}</span></p>
+      <p style="font-size:0.85rem;"><strong>Promo:</strong> ${voucher.discount}</p>
+      <button onclick="confirmRedeem('${voucher.code}')" style="margin-top:10px; background:#1E4D2B; color:white; padding:12px; border-radius:8px; font-weight:800; font-size:0.95rem; width:100%;">
+        🎉 Konfirmasi Penukaran Sekarang
       </button>
     `;
   }
 }
 
 window.quickRedeemCode = function(code) {
+  switchAdminTab('scanner');
   const inputCode = document.getElementById('input-verify-code');
   if (inputCode) inputCode.value = code;
   verifyVoucherCode(code);
-  document.getElementById('admin-verify-container').scrollIntoView({ behavior: 'smooth' });
 };
 
 window.confirmRedeem = async function(code) {
@@ -204,15 +247,12 @@ window.confirmRedeem = async function(code) {
     alert('🎉 Success! Voucher berhasil ditebus.');
     loadDashboardStats();
     loadLeadsTable();
-    verifyVoucherCode(code); // re-render result box as redeemed
+    verifyVoucherCode(code);
   } else {
     alert(result.message);
   }
 };
 
-/**
- * Camera QR Scanner Integration (html5-qrcode)
- */
 function initQRScanner() {
   const btnScan = document.getElementById('btn-open-scanner');
   const modal = document.getElementById('scanner-modal');
@@ -243,14 +283,12 @@ function startCameraScanner() {
     { facingMode: "environment" },
     {
       fps: 10,
-      qrbox: { width: 250, height: 250 }
+      qrbox: { width: 220, height: 220 }
     },
     (decodedText) => {
-      // Scanned successfully!
       console.log('Scanned QR:', decodedText);
       stopCameraScanner();
 
-      // Extract code (in case decoded text is JSON or raw string)
       let code = decodedText;
       try {
         const parsed = JSON.parse(decodedText);
@@ -260,9 +298,7 @@ function startCameraScanner() {
       document.getElementById('input-verify-code').value = code;
       verifyVoucherCode(code);
     },
-    (errorMessage) => {
-      // scanning... ignore frame errors
-    }
+    (errorMessage) => {}
   ).catch(err => {
     console.error('Camera access error:', err);
     alert('Tidak dapat mengaktifkan kamera. Pastikan izin kamera telah diberikan atau gunakan opsi Input Manual.');
@@ -282,9 +318,6 @@ function stopCameraScanner() {
   }
 }
 
-/**
- * Export Leads to CSV File
- */
 function initExportCSV() {
   const btnExport = document.getElementById('btn-export-csv');
   if (!btnExport) return;
@@ -315,15 +348,11 @@ function initExportCSV() {
   });
 }
 
-/**
- * Real-time BroadcastChannel sync across browser tabs
- */
 function initBroadcastSync() {
   if (window.BroadcastChannel) {
     const bc = new BroadcastChannel('radja_kukus_sync');
     bc.onmessage = (event) => {
       if (event.data && event.data.type === 'SYNC_UPDATE') {
-        console.log('Realtime sync update received');
         loadDashboardStats();
         loadLeadsTable();
       }
