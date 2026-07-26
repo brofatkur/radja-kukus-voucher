@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Voucher Traktir Kukusan & Dimsum - Radja Kukus Bali</title>
-  <meta name="description" content="Klaim voucher promo spesial traktir kukusan & dimsum khas Radja Kukus Bali. Dapatkan voucher gratis dengan mengisikan nama dan nomor WhatsApp Anda!">
+  <title>Voucher Traktir Kukusan & Dimsum - Radja Kukus Bali (26 Juli 2026)</title>
+  <meta name="description" content="Klaim voucher promo terbatas 100 kuota traktir kukusan & dimsum khas Radja Kukus Bali. Berlaku 26 Juli 2026 Jam 16.00 - 21.00 WITA!">
 
   <!-- CSS Design System -->
   <link rel="stylesheet" href="css/style.css">
@@ -14,6 +14,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
+
+  <!-- Top Announcement Bar -->
+  <div class="top-announcement-bar">
+    <span>🔥 PROMO KHUSUS HARI INI: <strong>26 JULI 2026</strong> | KLAIM JAM <strong>16:00 - 21:00 WITA</strong> | WA: <strong>0878-1872-0333</strong></span>
+  </div>
 
   <!-- Site Header -->
   <header class="site-header">
@@ -26,6 +31,9 @@
         </div>
       </div>
       <div class="nav-links">
+        <a href="https://wa.me/6287818720333" target="_blank" class="btn-wa-header">
+          💬 WA 087818720333
+        </a>
         <a href="admin.html" class="btn-admin-nav">
           🔒 Portal Admin
         </a>
@@ -33,27 +41,52 @@
     </div>
   </header>
 
-  <!-- Hero Section & Lead Capture Form -->
+  <!-- Hero Section & High-Conversion Lead Capture Form -->
   <section class="hero-section">
     <div class="hero-overlay-pattern"></div>
     <div class="hero-content">
-      <div class="promo-badge">🔥 Promo Spesial Lead Magnet</div>
+      <div class="promo-badge">⚡ LIMITED PROMO • KUOTA KHUSUS 100 VOUCHER</div>
       <h1 class="hero-title">Voucher Traktir Kukusan & Dimsum Radja Kukus Bali!</h1>
       <p class="hero-subtitle">
-        Dapatkan potongan harga & bonus item kukusan hangat lezat hanya dengan memasukkan Nama & Nomor WhatsApp Anda di bawah ini!
+        Berlaku Khusus <strong>26 Juli 2026</strong> (Jam Operasional Klaim: <strong>16.00 - 21.00 WITA</strong>). Dapatkan promo spesial dengan mengklaim voucher sebelum kuota habis!
       </p>
+
+      <!-- Countdown Urgency Timer -->
+      <div class="urgency-timer-box">
+        <div class="timer-label">⏰ SISA WAKTU KLAIM PROMO HARI INI:</div>
+        <div class="timer-digits">
+          <div class="timer-unit"><span id="timer-hours">00</span><label>Jam</label></div>
+          <span class="timer-colon">:</span>
+          <div class="timer-unit"><span id="timer-minutes">00</span><label>Menit</label></div>
+          <span class="timer-colon">:</span>
+          <div class="timer-unit"><span id="timer-seconds">00</span><label>Detik</label></div>
+        </div>
+      </div>
 
       <!-- Lead Capture Form Card -->
       <div class="lead-form-card">
-        <h2 class="form-header-title">🎁 Klaim Voucher Gratis Anda</h2>
-        <p class="form-header-subtitle">Voucher unik akan langsung dibuat secara otomatis</p>
+        
+        <!-- Realtime Quota Progress Bar -->
+        <div class="quota-container">
+          <div class="quota-header">
+            <span class="quota-title">🔥 Live Kuota Voucher Terklaim:</span>
+            <span class="quota-count"><strong id="quota-remaining-count">17</strong> / <span id="quota-total-count">100</span> Sisa Voucher</span>
+          </div>
+          <div class="quota-progress-track">
+            <div id="quota-progress-fill" class="quota-progress-fill" style="width: 83%;"></div>
+          </div>
+          <div id="quota-status-text" class="quota-status-text">⚡ Terisi 83% - Segera Klaim Sebelum Kehabisan!</div>
+        </div>
+
+        <h2 class="form-header-title" style="margin-top: 1rem;">🎁 Masukkan Data Untuk Klaim Voucher</h2>
+        <p class="form-header-subtitle">Voucher dengan Nomor Kode Unik & QR Code akan langsung dibuat</p>
 
         <form id="lead-form">
           <div class="form-group">
             <label for="customer-name" class="form-label">Nama Lengkap</label>
             <div class="input-wrapper">
               <span class="input-icon">👤</span>
-              <input type="text" id="customer-name" class="form-control" placeholder="Contoh: Budi Santoso" required>
+              <input type="text" id="customer-name" class="form-control" placeholder="Contoh: Ni Wayan Putu" required>
             </div>
           </div>
 
@@ -66,10 +99,11 @@
           </div>
 
           <button type="submit" class="btn-submit-lead">
-            ✨ Generate Voucher Sekarang
+            ⚡ KLAIM VOUCHER SEKARANG (GRATIS)
           </button>
         </form>
       </div>
+
     </div>
   </section>
 
@@ -103,14 +137,14 @@
             </div>
 
             <div class="voucher-expiry">
-              <span>📅 Berlaku s.d: <strong id="v-display-expiry">-</strong></span>
+              <span>📅 Masa Berlaku: <strong id="v-display-expiry">26 Juli 2026 (16.00 - 21.00 WITA)</strong></span>
             </div>
           </div>
 
           <div class="voucher-qr-col">
             <div class="voucher-qr-container">
               <div id="voucher-qrcode"></div>
-              <span class="qr-scan-hint">Scan di Outlet Kasir</span>
+              <span class="qr-scan-hint">Scan Kasir Outlet</span>
             </div>
           </div>
         </div>
@@ -121,8 +155,8 @@
         <button id="btn-download-voucher" class="btn-download-voucher">
           📥 Simpan Gambar Voucher (PNG)
         </button>
-        <a id="btn-wa-claim" href="#" target="_blank" class="btn-wa-claim">
-          💬 Klaim via WhatsApp Admin
+        <a id="btn-wa-claim" href="https://wa.me/6287818720333" target="_blank" class="btn-wa-claim">
+          💬 Konfirmasi Klaim via WA (0878-1872-0333)
         </a>
       </div>
 
@@ -133,7 +167,7 @@
   <section class="menu-section">
     <div class="section-header">
       <h2 class="section-title">🥟 Menu Handalan Radja Kukus Bali</h2>
-      <p class="section-subtitle">Dimaksimalkan dengan bahan berkualitas tinggi, disajikan hangat setiap hari</p>
+      <p class="section-subtitle">Disajikan segar & hangat setiap hari. Nikmati bersama voucher promo Anda!</p>
     </div>
 
     <!-- Category Tabs -->
@@ -151,11 +185,14 @@
     </div>
   </section>
 
+  <!-- Social Proof Toast Container -->
+  <div id="social-proof-container" class="social-proof-container"></div>
+
   <!-- Footer -->
   <footer class="site-footer">
     <div class="container">
       <p>© 2026 Radja Kukus Bali. All Rights Reserved.</p>
-      <p style="font-size:0.75rem; color:#DDD; margin-top:4px;">Cita Rasa Kukusan & Dimsum Terfavorit di Bali</p>
+      <p style="font-size:0.85rem; color:#FFD700; margin-top:4px;">Hubungi Kami WhatsApp: <strong>0878-1872-0333</strong></p>
     </div>
   </footer>
 

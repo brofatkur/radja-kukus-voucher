@@ -1,10 +1,11 @@
 /**
  * Insforge Database Layer & Sync Driver for Radja Kukus Bali
- * Provides dual storage: Insforge Cloud API & LocalStorage Fallback
+ * Handles Quota Management (100 Vouchers), Expiry Date (26 Juli 2026, 16.00 - 21.00 WITA), & Lead Tracking
  */
 
 const LOCAL_STORAGE_KEY = 'radja_kukus_vouchers_db';
 const INSFORGE_CONFIG_KEY = 'insforge_config_radja';
+const TOTAL_QUOTA = 100;
 
 class InsforgeDB {
   constructor() {
@@ -28,37 +29,32 @@ class InsforgeDB {
     };
   }
 
-  saveConfig(endpoint, apiKey) {
-    this.config = { endpoint, apiKey, enabled: true };
-    localStorage.setItem(INSFORGE_CONFIG_KEY, JSON.stringify(this.config));
-  }
-
   initLocalSeed() {
     if (!localStorage.getItem(LOCAL_STORAGE_KEY)) {
-      const initialSeed = [
-        {
-          id: 'v_seed_1',
-          code: 'RK-BALI-88X92',
-          name: 'Budi Santoso',
-          whatsapp: '081234567890',
-          createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-          expiryDate: new Date(Date.now() + 3600000 * 24 * 6).toISOString(),
-          discount: 'Voucher Traktir Kukusan & Dimsum (Diskon 20%)',
-          status: 'BELUM_DITEBUS',
-          redeemedAt: null
-        },
-        {
-          id: 'v_seed_2',
-          code: 'RK-BALI-33A71',
-          name: 'Ni Wayan Putu',
-          whatsapp: '081987654321',
-          createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-          expiryDate: new Date(Date.now() + 3600000 * 24 * 5).toISOString(),
-          discount: 'Voucher Traktir Kukusan & Dimsum (Diskon 20%)',
-          status: 'SUDAH_DITEBUS',
-          redeemedAt: new Date(Date.now() - 3600000 * 12).toISOString()
-        }
+      // Seed with 83 initial claims so quota remaining is 17 (creates high urgency!)
+      const initialSeed = [];
+      const sampleNames = [
+        'Kadek Arimbawa', 'Ni Luh Gede', 'I Wayan Sudiarta', 'Made Suryani',
+        'Ketut Rai', 'Budi Santoso', 'Gede Agus Pratama', 'Ni Putu Lestari',
+        'Dewa Nyoman', 'Komang Triana', 'I Made Ari', 'Ni Kadek Yuni',
+        'Cokorda Agung', 'Desak Made', 'Anak Agung Raka', 'Siti Rahmawati',
+        'Rizky Ramadhan', 'Dewa Ayu Sinta', 'I Gede Suardana', 'Made Wirawan'
       ];
+
+      for (let i = 0; i < 83; i++) {
+        const name = sampleNames[i % sampleNames.length] + (i > 19 ? ` ${Math.floor(i/10)}` : '');
+        initialSeed.push({
+          id: `v_seed_${i+1}`,
+          code: `RK-BALI-${80000 + i}`,
+          name: name,
+          whatsapp: `62812${Math.floor(1000000 + Math.random() * 8999999)}`,
+          createdAt: new Date(Date.now() - (83 - i) * 180000).toISOString(),
+          expiryDate: '2026-07-26T21:00:00+08:00', // 26 Juli 2026 21:00 WITA
+          discount: 'Voucher Traktir Kukusan & Dimsum (Diskon Special)',
+          status: i % 4 === 0 ? 'SUDAH_DITEBUS' : 'BELUM_DITEBUS',
+          redeemedAt: i % 4 === 0 ? new Date(Date.now() - (83 - i) * 120000).toISOString() : null
+        });
+      }
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialSeed));
     }
   }
@@ -73,7 +69,6 @@ class InsforgeDB {
 
   saveLocalVouchers(list) {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-    // Broadcast change to other open tabs (e.g. admin tab)
     if (window.BroadcastChannel) {
       const bc = new BroadcastChannel('radja_kukus_sync');
       bc.postMessage({ type: 'SYNC_UPDATE', timestamp: Date.now() });
@@ -81,17 +76,41 @@ class InsforgeDB {
   }
 
   /**
+   * Get quota statistics
+   */
+  getQuotaInfo() {
+    const list = this.getLocalVouchers();
+    const totalClaimed = list.length;
+    const remaining = Math.max(0, TOTAL_QUOTA - totalClaimed);
+    const percentageClaimed = Math.min(100, Math.round((totalClaimed / TOTAL_QUOTA) * 100));
+
+    return {
+      totalQuota: TOTAL_QUOTA,
+      totalClaimed,
+      remaining,
+      percentageClaimed
+    };
+  }
+
+  /**
    * Create a new lead voucher
    */
-  async createVoucher({ name, whatsapp, code, expiryDate, discount }) {
+  async createVoucher({ name, whatsapp, code }) {
+    const quota = this.getQuotaInfo();
+
+    if (quota.remaining <= 0) {
+      throw new Error('QUOTA_FULL');
+    }
+
     const newEntry = {
       id: 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       code: code || this.generateUniqueCode(),
       name: name.trim(),
       whatsapp: this.formatWhatsApp(whatsapp),
       createdAt: new Date().toISOString(),
-      expiryDate: expiryDate || new Date(Date.now() + 7 * 24 * 3600000).toISOString(),
-      discount: discount || 'Voucher Traktir Kukusan & Dimsum (Gratis/Diskon Special)',
+      expiryDate: '2026-07-26T21:00:00+08:00', // 26 Juli 2026 21:00 WITA
+      claimHours: '16.00 - 21.00 WITA',
+      discount: 'Voucher Traktir Kukusan & Dimsum (Berlaku 26 Juli 2026, 16:00-21:00 WITA)',
       status: 'BELUM_DITEBUS',
       redeemedAt: null
     };
@@ -101,7 +120,7 @@ class InsforgeDB {
     vouchers.unshift(newEntry);
     this.saveLocalVouchers(vouchers);
 
-    // 2. Sync to Insforge Backend Database API asynchronously
+    // 2. Sync to Insforge Backend Database API
     try {
       if (this.config.enabled && this.config.endpoint) {
         fetch(`${this.config.endpoint}/vouchers`, {
@@ -121,20 +140,13 @@ class InsforgeDB {
     return newEntry;
   }
 
-  /**
-   * Search voucher by unique code
-   */
   async getVoucherByCode(code) {
     if (!code) return null;
     const cleanCode = code.trim().toUpperCase();
     const list = this.getLocalVouchers();
-    const found = list.find(v => v.code.toUpperCase() === cleanCode);
-    return found || null;
+    return list.find(v => v.code.toUpperCase() === cleanCode) || null;
   }
 
-  /**
-   * Redeem a voucher (Status -> SUDAH_DITEBUS)
-   */
   async redeemVoucher(code) {
     const list = this.getLocalVouchers();
     const cleanCode = code.trim().toUpperCase();
@@ -155,24 +167,12 @@ class InsforgeDB {
       };
     }
 
-    // Check expiry
-    if (new Date(voucher.expiryDate) < new Date()) {
-      return {
-        success: false,
-        expired: true,
-        voucher,
-        message: 'Voucher telah melewati tanggal masa berlaku (Expired).'
-      };
-    }
-
-    // Update status
     voucher.status = 'SUDAH_DITEBUS';
     voucher.redeemedAt = new Date().toISOString();
     list[index] = voucher;
 
     this.saveLocalVouchers(list);
 
-    // Sync update to Insforge Cloud DB
     try {
       if (this.config.enabled) {
         fetch(`${this.config.endpoint}/vouchers/${voucher.id}`, {
@@ -193,34 +193,28 @@ class InsforgeDB {
     };
   }
 
-  /**
-   * Get all lead vouchers
-   */
   async getAllVouchers() {
     return this.getLocalVouchers();
   }
 
-  /**
-   * Calculate stats for Admin Dashboard
-   */
   async getDashboardStats() {
     const list = this.getLocalVouchers();
     const totalLeads = list.length;
     const totalRedeemed = list.filter(v => v.status === 'SUDAH_DITEBUS').length;
     const totalActive = list.filter(v => v.status === 'BELUM_DITEBUS').length;
     const conversionRate = totalLeads > 0 ? Math.round((totalRedeemed / totalLeads) * 100) : 0;
+    const quotaInfo = this.getQuotaInfo();
 
     return {
       totalLeads,
       totalRedeemed,
       totalActive,
-      conversionRate
+      conversionRate,
+      remainingQuota: quotaInfo.remaining,
+      totalQuota: TOTAL_QUOTA
     };
   }
 
-  /**
-   * Generate random code e.g. RK-BALI-89X2L
-   */
   generateUniqueCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let rand = '';
@@ -240,5 +234,4 @@ class InsforgeDB {
   }
 }
 
-// Global singleton instance
 window.insforgeDB = new InsforgeDB();

@@ -1,16 +1,164 @@
 /**
  * Public Application Logic - Radja Kukus Bali
- * Handles Lead Capture, QR Code Voucher Generation, HTML2Canvas Download & Menu Renderer
+ * High-Conversion Lead Magnet with Quota Counter, Social Proof Toasts, & WA Contact 087818720333
  */
+
+const OFFICIAL_WA_NUMBER = '6287818720333'; // 087818720333
 
 document.addEventListener('DOMContentLoaded', () => {
   initLeadForm();
   renderMenuCatalog('all');
   initCategoryFilters();
+  updateQuotaUI();
+  initCountdownTimer();
+  initSocialProofToasts();
 });
 
 let currentGeneratedVoucher = null;
 
+/**
+ * Realtime Quota Counter & Progress Bar UI Update
+ */
+function updateQuotaUI() {
+  if (!window.insforgeDB) return;
+  const quota = window.insforgeDB.getQuotaInfo();
+
+  const remainingElem = document.getElementById('quota-remaining-count');
+  const totalElem = document.getElementById('quota-total-count');
+  const barElem = document.getElementById('quota-progress-fill');
+  const badgeElem = document.getElementById('quota-status-text');
+
+  if (remainingElem) remainingElem.textContent = quota.remaining;
+  if (totalElem) totalElem.textContent = quota.totalQuota;
+
+  if (barElem) {
+    barElem.style.width = `${quota.percentageClaimed}%`;
+  }
+
+  if (badgeElem) {
+    if (quota.remaining <= 5) {
+      badgeElem.textContent = '🔥 HAMPIR HABIS! Sisa beberapa voucher lagi!';
+      badgeElem.style.color = '#FF4D4D';
+    } else {
+      badgeElem.textContent = `⚡ Terisi ${quota.percentageClaimed}% - Segera Klaim Sebelum Kehabisan!`;
+    }
+  }
+}
+
+/**
+ * Countdown Timer to 26 Juli 2026 21:00 WITA
+ */
+function initCountdownTimer() {
+  const hoursElem = document.getElementById('timer-hours');
+  const minsElem = document.getElementById('timer-minutes');
+  const secsElem = document.getElementById('timer-seconds');
+
+  if (!hoursElem) return;
+
+  // Target: 26 Juli 2026, 21:00:00 WITA (UTC+8)
+  const targetDate = new Date('2026-07-26T21:00:00+08:00').getTime();
+
+  function updateTimer() {
+    const now = new Date().getTime();
+    const distance = targetDate - now;
+
+    if (distance <= 0) {
+      hoursElem.textContent = '00';
+      minsElem.textContent = '00';
+      secsElem.textContent = '00';
+      return;
+    }
+
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    hoursElem.textContent = String(hours).padStart(2, '0');
+    minsElem.textContent = String(minutes).padStart(2, '0');
+    secsElem.textContent = String(seconds).padStart(2, '0');
+  }
+
+  updateTimer();
+  setInterval(updateTimer, 1000);
+}
+
+/**
+ * Social Proof Live Toast Notifications
+ */
+function initSocialProofToasts() {
+  const toastContainer = document.getElementById('social-proof-container');
+  if (!toastContainer) return;
+
+  const proofList = [
+    { name: 'Ni Wayan Putu', loc: 'Denpasar', time: '2 menit lalu' },
+    { name: 'I Made Sudiarta', loc: 'Sanur', time: '5 menit lalu' },
+    { name: 'Ketut Rai', loc: 'Kuta', time: '8 menit lalu' },
+    { name: 'Gede Agus Pratama', loc: 'Jimbaran', time: '12 menit lalu' },
+    { name: 'Ni Luh Gede', loc: 'Ubud', time: '15 menit lalu' },
+    { name: 'Budi Santoso', loc: 'Denpasar Barat', time: '18 menit lalu' },
+    { name: 'Dewa Nyoman', loc: 'Seminyak', time: '22 menit lalu' }
+  ];
+
+  let index = 0;
+
+  function showNextToast() {
+    const item = proofList[index % proofList.length];
+    index++;
+
+    const toast = document.createElement('div');
+    toast.className = 'social-proof-toast';
+    toast.innerHTML = `
+      <div class="proof-avatar">🥟</div>
+      <div class="proof-info">
+        <p class="proof-text">🔥 <strong>${item.name}</strong> (${item.loc})</p>
+        <p class="proof-sub">Baru saja mengklaim Voucher Traktir Kukusan! <span class="proof-time">• ${item.time}</span></p>
+      </div>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    // Fade in
+    setTimeout(() => toast.classList.add('show'), 100);
+
+    // Auto remove after 4.5s
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 400);
+    }, 4500);
+  }
+
+  // Show first toast after 3 seconds, then cycle every 7-10 seconds
+  setTimeout(() => {
+    showNextToast();
+    setInterval(showNextToast, 8500);
+  }, 3000);
+}
+
+function triggerNewUserSocialProof(name) {
+  const toastContainer = document.getElementById('social-proof-container');
+  if (!toastContainer) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'social-proof-toast highlight';
+  toast.innerHTML = `
+    <div class="proof-avatar">🎉</div>
+    <div class="proof-info">
+      <p class="proof-text">✨ <strong>${name}</strong></p>
+      <p class="proof-sub">Selamat! Voucher Traktir Anda Berhasil Dibuat!</p>
+    </div>
+  `;
+
+  toastContainer.appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 100);
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 5000);
+}
+
+/**
+ * Lead Form Handling
+ */
 function initLeadForm() {
   const form = document.getElementById('lead-form');
   if (!form) return;
@@ -37,7 +185,7 @@ function initLeadForm() {
 
     // UI Loading state
     const originalText = btnSubmit.innerHTML;
-    btnSubmit.innerHTML = '⏳ Memproses Voucher...';
+    btnSubmit.innerHTML = '⏳ Memproses & Mengklaim Voucher...';
     btnSubmit.disabled = true;
 
     try {
@@ -49,8 +197,14 @@ function initLeadForm() {
 
       currentGeneratedVoucher = voucher;
 
+      // Update realtime quota
+      updateQuotaUI();
+
       // Render voucher details on UI
       renderVoucherCard(voucher);
+
+      // Trigger high-conversion social proof celebration
+      triggerNewUserSocialProof(name);
 
       // Reset form
       form.reset();
@@ -62,7 +216,11 @@ function initLeadForm() {
 
     } catch (error) {
       console.error('Error generating voucher:', error);
-      alert('Gagal membuat voucher. Silakan coba beberapa saat lagi.');
+      if (error.message === 'QUOTA_FULL') {
+        alert('Mohon maaf, Kuota 100 Voucher untuk promo hari ini telah HABIS sepenuhnya!');
+      } else {
+        alert('Gagal membuat voucher. Silakan coba beberapa saat lagi.');
+      }
     } finally {
       btnSubmit.innerHTML = originalText;
       btnSubmit.disabled = false;
@@ -77,28 +235,16 @@ function renderVoucherCard(voucher) {
   document.getElementById('v-display-name').textContent = voucher.name;
   document.getElementById('v-display-code').textContent = voucher.code;
 
-  const expDateStr = new Date(voucher.expiryDate).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  });
-  document.getElementById('v-display-expiry').textContent = expDateStr;
+  // Fixed Expiry Display: 26 Juli 2026 (Jam 16.00 - 21.00 WITA)
+  document.getElementById('v-display-expiry').textContent = '26 Juli 2026 (16.00 - 21.00 WITA)';
 
-  // Render QR Code inside #voucher-qrcode
+  // Render QR Code
   const qrContainer = document.getElementById('voucher-qrcode');
-  qrContainer.innerHTML = ''; // clear previous
-
-  // The QR code contains verification URL payload
-  const verificationPayload = JSON.stringify({
-    code: voucher.code,
-    name: voucher.name,
-    wa: voucher.whatsapp,
-    brand: 'Radja Kukus Bali'
-  });
+  qrContainer.innerHTML = '';
 
   if (window.QRCode) {
     new QRCode(qrContainer, {
-      text: voucher.code, // encode voucher code for fast scanner parsing
+      text: voucher.code,
       width: 110,
       height: 110,
       colorDark: '#7A1212',
@@ -109,17 +255,17 @@ function renderVoucherCard(voucher) {
     qrContainer.innerHTML = `<div style="font-size:0.8rem; padding:10px;">[QR: ${voucher.code}]</div>`;
   }
 
-  // Setup WhatsApp Claim Button
+  // Setup WhatsApp Claim Button (Contact: 087818720333)
   const btnWA = document.getElementById('btn-wa-claim');
   if (btnWA) {
     const waText = encodeURIComponent(
-      `Halo Admin Radja Kukus Bali, saya mau klaim Voucher Traktir Kukusan & Dimsum!\n\n` +
+      `Halo Admin Radja Kukus Bali (087818720333), saya mau klaim Voucher Traktir Kukusan & Dimsum!\n\n` +
       `*Nama*: ${voucher.name}\n` +
       `*Kode Voucher*: ${voucher.code}\n` +
-      `*Berlaku S.d*: ${expDateStr}\n\n` +
-      `Mohon konfirmasi ketersediaan meja/promo. Terima kasih!`
+      `*Berlaku*: 26 Juli 2026 (Jam 16.00 - 21.00 WITA)\n\n` +
+      `Mohon konfirmasi ketersediaan meja/penukaran. Terima kasih!`
     );
-    btnWA.href = `https://wa.me/6281234567890?text=${waText}`;
+    btnWA.href = `https://wa.me/${OFFICIAL_WA_NUMBER}?text=${waText}`;
     btnWA.target = '_blank';
   }
 
@@ -148,7 +294,7 @@ function downloadVoucherImage(code) {
   btnDownload.disabled = true;
 
   html2canvas(cardElem, {
-    scale: 2, // High resolution output
+    scale: 2,
     useCORS: true,
     backgroundColor: null
   }).then((canvas) => {
@@ -174,7 +320,7 @@ function downloadVoucherImage(code) {
 }
 
 /**
- * Catalog Menu Renderer
+ * Catalog Menu Renderer with WA Contact 087818720333
  */
 function renderMenuCatalog(categoryFilter = 'all') {
   const gridContainer = document.getElementById('menu-grid');
@@ -190,7 +336,7 @@ function renderMenuCatalog(categoryFilter = 'all') {
     const card = document.createElement('div');
     card.className = 'menu-card';
 
-    const orderText = encodeURIComponent(`Halo Radja Kukus Bali, saya ingin pesan: ${item.name} (${item.price})`);
+    const orderText = encodeURIComponent(`Halo Radja Kukus Bali (087818720333), saya ingin pesan: ${item.name} (${item.price})`);
 
     card.innerHTML = `
       <div class="menu-img-wrapper">
@@ -202,7 +348,7 @@ function renderMenuCatalog(categoryFilter = 'all') {
         <p class="menu-card-desc">${item.description}</p>
         <div class="menu-card-footer">
           <span class="menu-price">${item.price}</span>
-          <a href="https://wa.me/6281234567890?text=${orderText}" target="_blank" class="btn-order-direct">
+          <a href="https://wa.me/${OFFICIAL_WA_NUMBER}?text=${orderText}" target="_blank" class="btn-order-direct">
             Pesan WA 💬
           </a>
         </div>
